@@ -1,38 +1,48 @@
-// src/context/CartContext.js
 import React, { createContext, useContext, useState } from 'react';
 
-// 1. Tạo Context
 const CartContext = createContext();
 
-// 2. Tạo Provider (Component "cung cấp" state)
+export const useCart = () => useContext(CartContext);
+
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
 
-    const addToCart = (menuItem) => {
+    const addToCart = (item) => {
+        // ... (logic addToCart của bạn) ...
+        // Ví dụ:
         setCartItems(prevItems => {
-            const existingItem = prevItems.find(item => item.id === menuItem.id);
-            if (existingItem) {
-                // Tăng số lượng nếu đã có
-                return prevItems.map(item =>
-                    item.id === menuItem.id ? { ...item, quantity: item.quantity + 1 } : item
+            const itemExists = prevItems.find(i => i.id === item.id);
+            if (itemExists) {
+                return prevItems.map(i =>
+                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
                 );
             }
-            // Thêm mới
-            return [...prevItems, { ...menuItem, quantity: 1 }];
+            return [...prevItems, { ...item, quantity: 1 }];
         });
-        console.log("Đã thêm vào giỏ:", menuItem.name);
+        console.log("Đã thêm vào giỏ:", item.name); // Log này có trong F12 của bạn
     };
 
-    const value = { cartItems, addToCart };
+    // --- BẮT ĐẦU: THÊM HÀM NÀY ---
+    // Hàm này sẽ reset giỏ hàng về mảng rỗng
+    const clearCart = () => {
+        setCartItems([]);
+        console.log("Đã xóa giỏ hàng.");
+    };
+    // --- KẾT THÚC: THÊM HÀM NÀY ---
+
+
+    // --- SỬA DÒNG NÀY ---
+    // Đảm bảo bạn thêm 'clearCart' vào đối tượng 'value'
+    const value = {
+        cartItems,
+        addToCart,
+        clearCart // <-- Thêm vào đây
+        // ... (bất kỳ hàm nào khác bạn có, như removeFromCart, v.v.)
+    };
 
     return (
         <CartContext.Provider value={value}>
             {children}
         </CartContext.Provider>
     );
-};
-
-// 3. Tạo Hook tùy chỉnh (để sử dụng context dễ dàng)
-export const useCart = () => {
-    return useContext(CartContext);
 };

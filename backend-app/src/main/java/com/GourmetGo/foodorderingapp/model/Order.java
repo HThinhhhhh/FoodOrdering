@@ -1,5 +1,8 @@
 package com.GourmetGo.foodorderingapp.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,13 +12,16 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "orders")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Order {
+public class Order implements Serializable{
+
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +30,7 @@ public class Order {
     /** Người dùng đã đặt đơn hàng này */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference("user-order")
     private User user;
 
     /** Trạng thái hiện tại của đơn hàng (RECEIVED, PREPARING, READY) */
@@ -46,5 +53,6 @@ public class Order {
 
     /** Danh sách các món trong đơn hàng */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("order-order-item")
     private Set<OrderItem> items;
 }

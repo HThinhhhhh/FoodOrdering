@@ -7,7 +7,7 @@ import com.GourmetGo.foodorderingapp.dto.OrderRequest;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate; // 1. Import
+// import org.springframework.messaging.simp.SimpMessagingTemplate; // <-- XÓA IMPORT NÀY
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,9 +19,11 @@ public class OrderService {
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
 
-    // 2. Tiêm (Inject) Messaging Template
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    // --- BẮT ĐẦU SỬA ĐỔI ---
+    // Xóa @Autowired và SimpMessagingTemplate
+    // @Autowired
+    // private SimpMessagingTemplate messagingTemplate;
+    // --- KẾT THÚC SỬA ĐỔI ---
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -31,8 +33,7 @@ public class OrderService {
     }
 
     /**
-     * Nhận yêu cầu đơn hàng, chuyển thành JSON, đẩy vào Redis Queue
-     * VÀ gửi thông báo WebSocket cho nhà bếp.
+     * Nhận yêu cầu đơn hàng, chuyển thành JSON và chỉ đẩy vào Redis Queue.
      *
      * @param request Yêu cầu đơn hàng từ client
      */
@@ -46,13 +47,12 @@ public class OrderService {
 
             System.out.println("Đã đẩy đơn hàng vào queue: " + orderJsonString);
 
-            // 3. (MỚI) Gửi thông báo real-time tới kênh "/topic/kitchen"
-            // Bất kỳ client nào (ví dụ: màn hình bếp KDS) đang lắng nghe
-            // kênh này sẽ nhận được đối tượng 'request' (đã tự động
-            // được Spring serialize thành JSON).
-            messagingTemplate.convertAndSend("/topic/kitchen", request);
-
-            System.out.println("Đã gửi thông báo real-time tới /topic/kitchen");
+            // --- BẮT ĐẦU SỬA ĐỔI ---
+            // Xóa 2 dòng gửi WebSocket ở đây.
+            // OrderBatchProcessor sẽ đảm nhận việc này.
+            // messagingTemplate.convertAndSend("/topic/kitchen", request);
+            // System.out.println("Đã gửi thông báo real-time tới /topic/kitchen");
+            // --- KẾT THÚC SỬA ĐỔI ---
 
         } catch (JsonProcessingException e) {
             System.err.println("Lỗi khi serialize đơn hàng: " + e.getMessage());

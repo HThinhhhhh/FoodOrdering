@@ -1,26 +1,31 @@
 // src/components/Checkout.js
+
+// --- PHẦN 1: CÁC IMPORT (ĐÃ ĐẦY ĐỦ) ---
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
+// --- PHẦN 2: HẰNG SỐ (GIỮ NGUYÊN) ---
 const API_URL = 'http://localhost:8080/api';
 
 export const Checkout = () => {
-    const { cartItems } = useCart();
+    // --- PHẦN 3: CÁC HOOKS (GIỮ NGUYÊN) ---
+    const { cartItems, clearCart } = useCart();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
 
     // Giả định chúng ta có ID người dùng (ví dụ: 1)
     const MOCK_USER_ID = 1;
 
+    // --- PHẦN 4: HÀM ĐÃ SỬA VỚI "FINALLY" ---
     const handleCheckout = async () => {
         if (cartItems.length === 0) {
             alert("Vui lòng thêm món vào giỏ hàng!");
             return;
         }
 
-        setIsLoading(true);
+        setIsLoading(true); // <-- Bật loading
 
         try {
             // 1. Gọi Mock Payment
@@ -33,39 +38,37 @@ export const Checkout = () => {
                 // 2. Định dạng và gửi đơn hàng
                 const orderRequest = {
                     userId: MOCK_USER_ID,
-                    // Định dạng lại giỏ hàng theo DTO (Prompt 4)
                     items: cartItems.map(item => ({
                         menuItemId: item.id,
                         quantity: item.quantity
                     })),
-                    // Giả định nhận hàng sau 15 phút
                     pickupWindow: new Date(Date.now() + 15 * 60000).toISOString()
                 };
 
                 console.log("Đang gửi đơn hàng:", orderRequest);
+                await axios.post("/api/orders", orderRequest);
+                console.log("Đơn hàng đã được tiếp nhận và đang đưa vào hàng đợi.");
 
-                // *** GIẢ ĐỊNH QUAN TRỌNG: ***
-                // Giả định API /orders trả về order (với id)
-                // thay vì chỉ trả về 202 Accepted.
-                const orderResponse = await axios.post("/api/orders", orderRequest);
-
-                const orderId = orderResponse.data.id; // Lấy ID từ response
-
-                if (orderId) {
-                    console.log("Đơn hàng đã được nhận, ID:", orderId);
-                    // 3. Điều hướng đến trang trạng thái
-                    navigate(`/order-status/${orderId}`);
-                } else {
-                    throw new Error("Không nhận được Order ID từ server");
+                // 3. Xóa giỏ hàng
+                if (clearCart) {
+                    clearCart();
                 }
+
+                // 4. Thông báo và điều hướng
+                alert("Đơn hàng của bạn đã được tiếp nhận và đang được xử lý!");
+                navigate('/');
+
             }
         } catch (error) {
-            console.error("Lỗi khi thanh toán:", error);
+            console.error("Lỗi khi thanh toán hoặc gửi đơn hàng:", error);
             alert("Đã xảy ra lỗi, vui lòng thử lại.");
+        } finally {
+            // 'finally' sẽ luôn chạy, đảm bảo nút được reset
+            setIsLoading(false); // <-- Tắt loading
         }
-        setIsLoading(false);
     };
 
+    // --- PHẦN 5: GIAO DIỆN (GIỮ NGUYÊN) ---
     return (
         <button onClick={handleCheckout} disabled={isLoading || cartItems.length === 0}>
             {isLoading ? "Đang xử lý..." : "Thanh toán"}

@@ -1,19 +1,19 @@
 // src/components/KitchenDisplay.js
 import React, { useState, useEffect } from 'react';
 import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client'; // <-- THÊM IMPORT NÀY
 
-// ---- CẤU HÌNH ----
-const WS_URL = 'ws://localhost:3000/ws';
-const SUB_TOPIC = '/topic/kitchen'; // Kênh nhận đơn hàng MỚI
-const SEND_DESTINATION = '/app/kitchen/update-status'; // Nơi gửi cập nhật trạng thái
-// -----------------
+// ---- CẤU HÌNH ĐÃ SỬA ----
+// Chúng ta sẽ dùng HTTP URL cho SockJS, nó sẽ tự nâng cấp lên WS
+const BACKEND_WS_URL = 'http://localhost:8080/ws'; // <-- SỬA PORT THÀNH 8080
+const SUB_TOPIC = '/topic/kitchen';
+const SEND_DESTINATION = '/app/kitchen/update-status';
+// -----------------------
 
 /**
- * Một Card đại diện cho mỗi đơn hàng
+ * Một Card đại diện cho mỗi đơn hàng (GIỮ NGUYÊN)
  */
 const OrderCard = ({ order, onUpdateStatus }) => {
-
-    // Logic hiển thị nút bấm tùy theo trạng thái
     const renderActionButtons = () => {
         switch (order.status) {
             case 'RECEIVED':
@@ -45,11 +45,15 @@ const OrderCard = ({ order, onUpdateStatus }) => {
         <div className="order-card">
             <h4>Đơn hàng #{order.id}</h4>
             <ul>
-                {/* Giả định 'items' là một Set/Array và có 'menuItem' và 'quantity' */}
-                {/* (Để đơn giản, chúng ta chỉ hiển thị tên.
-                   Trong thực tế, bạn cần truy cập order.items) */}
-                <li>(Chi tiết các món ăn ở đây)</li>
-                <li>(Số lượng ở đây)</li>
+                {/* Giờ chúng ta có thể hiển thị chi tiết
+                   Giả sử 'items' là một mảng
+                 */}
+                {order.items && order.items.map((item, index) => (
+                    <li key={index}>
+                        {item.quantity} x (Tên món ăn ID: {item.menuItemId})
+                    </li>
+                ))}
+                {/* Bạn sẽ cần fetch tên món ăn từ ID trong thực tế */}
             </ul>
             {renderActionButtons()}
         </div>
@@ -62,38 +66,46 @@ const OrderCard = ({ order, onUpdateStatus }) => {
  */
 export const KitchenDisplay = () => {
     const [stompClient, setStompClient] = useState(null);
-    const [orders, setOrders] = useState([]); // Danh sách tất cả đơn hàng
+    const [orders, setOrders] = useState([]);
 
-    // 1. Kết nối WebSocket khi component mount
+    // --- SỬA LOGIC KẾT NỐI TRONG USEEFFECT ---
     useEffect(() => {
-        const client = new Client({
-            brokerURL: WS_URL,
-            reconnectDelay: 5000,
-            onConnect: () => {
-                console.log("KDS Đã kết nối WebSocket!");
 
-                // Đăng ký (subscribe) vào topic của bếp
-                client.subscribe(SUB_TOPIC, (message) => {
-                    try {
-                        const newOrder = JSON.parse(message.body);
-                        console.log("Đơn hàng MỚI NHẬN:", newOrder);
+        // 1. Khởi tạo Client
+        const client = new Client();
 
-                        // Thêm đơn hàng mới vào danh sách
-                        setOrders(prevOrders => [...prevOrders, newOrder]);
-                    } catch (e) {
-                        console.error("Lỗi khi parse đơn hàng:", e);
-                    }
-                });
-            },
-            onStompError: (frame) => {
-                console.error("Lỗi STOMP (KDS):", frame);
-            },
-        });
+        // 2. (QUAN TRỌNG) Sử dụng SockJS làm "nhà máy" kết nối
+        client.webSocketFactory = () => {
+            return new SockJS(BACKEND_WS_URL);
+        };
 
+        // 3. (Giữ nguyên) Xử lý khi kết nối thành công
+        client.onConnect = () => {
+            console.log("KDS Đã kết nối WebSocket!");
+
+            client.subscribe(SUB_TOPIC, (message) => {
+                try {
+                    const newOrder = JSON.parse(message.body);
+                    console.log("Đơn hàng MỚI NHẬN:", newOrder);
+
+                    // Thêm đơn hàng mới vào danh sách
+                    setOrders(prevOrders => [...prevOrders, newOrder]);
+                } catch (e) {
+                    console.error("Lỗi khi parse đơn hàng:", e);
+                }
+            });
+        };
+
+        // 4. (Giữ nguyên) Xử lý lỗi
+        client.onStompError = (frame) => {
+            console.error("Lỗi STOMP (KDS):", frame);
+        };
+
+        // 5. Kích hoạt kết nối
         client.activate();
         setStompClient(client);
 
-        // Cleanup: Ngắt kết nối khi component unmount
+        // Cleanup
         return () => {
             if (client) {
                 client.deactivate();
@@ -101,6 +113,10 @@ export const KitchenDisplay = () => {
             }
         };
     }, []); // Chỉ chạy 1 lần
+    // --- KẾT THÚC SỬA ĐỔI USEEFFECT ---
+
+
+    // (Phần còn lại của tệp giữ nguyên)
 
     // 3. Hàm xử lý Cập nhật Trạng thái (gửi tin nhắn đi)
     const handleUpdateStatus = (orderId, newStatus) => {
@@ -110,14 +126,11 @@ export const KitchenDisplay = () => {
                 newStatus: newStatus
             };
 
-            // Gửi tin nhắn đến backend (Prompt 7)
             stompClient.publish({
                 destination: SEND_DESTINATION,
                 body: JSON.stringify(payload)
             });
 
-            // Cập nhật trạng thái local ngay lập tức (Optimistic Update)
-            // để di chuyển card
             setOrders(prevOrders =>
                 prevOrders.map(order =>
                     order.id === orderId ? { ...order, status: newStatus } : order
@@ -178,7 +191,7 @@ export const KitchenDisplay = () => {
                 ))}
             </div>
 
-            {/* Thêm CSS đơn giản để hiển thị cột */}
+            {/* (CSS giữ nguyên) */}
             <style>{`
                 .kds-container {
                     display: flex;

@@ -1,5 +1,6 @@
 package com.GourmetGo.foodorderingapp.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,13 +8,17 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.Set;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "menu_items")
 @Getter
 @Setter
 @NoArgsConstructor
-public class MenuItem {
+public class MenuItem implements Serializable{
+
+    // (Thêm dòng này để Java bớt "cảnh báo")
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,9 +47,11 @@ public class MenuItem {
 
     // Quan hệ: Một MenuItem có thể được gọi trong nhiều OrderItem
     @OneToMany(mappedBy = "menuItem")
+    @JsonManagedReference("menu-item-order-item")
     private Set<OrderItem> orderItems;
 
     // Quan hệ: Một MenuItem có thể có nhiều Review
     @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("menu-item-review")
     private Set<Review> reviews;
 }
