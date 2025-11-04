@@ -30,6 +30,21 @@ Hệ thống sử dụng **Redis Queue** để xử lý đơn hàng bất đồn
 |**Testing**|JUnit 5, Mockito|
 |**Môi trường**|Docker Desktop (khuyên dùng cho Redis)|
 
+### 📡 Các API và Kênh WebSocket chính
+**API Endpoints**
+|Phương thức|Endpoint|Mô tả|
+|:-------|:--------|:--------|
+|`GET`|`/api/menu`|Lấy danh sách thực đơn. Hỗ trợ query params: `?is_vegetarian=true`, `?is_spicy=true`.|
+|`POST`|`/api/payments/mock`|Giả lập cổng thanh toán, luôn trả về `{"status": "SUCCESS"}`.|
+|`POST`|`/api/orders`|Nhận yêu cầu đơn hàng. Đẩy vào Redis Queue và trả về `202 ACCEPTED`.|
+
+**Kênh WebSocket**
+|Kênh|Hướng|Mô tả|
+|:-------|:--------|:--------|
+`/ws`|-|Endpoint chính để kết nối SockJS (do `WebSocketConfig` thiết lập).|
+|`/topic/kitchen`|**Sub (Lắng nghe)**|KDS lắng nghe kênh này. `OrderBatchProcessor` gửi Đơn hàng (DTO) đã lưu vào đây.|
+|`/app/kitchen/update-status`|**Pub (Gửi)**|(Chưa hoàn thiện) KDS sẽ gửi cập nhật trạng thái (PREPARING, READY) đến đây.|
+
 ## 📋 Yêu cầu hệ thống
 Trước khi bắt đầu, cần cài đặt các công cụ sau:
 1. **Java JDK 17** (hoặc mới hơn).
@@ -104,6 +119,7 @@ npm install
 3. **Sửa URL:** Đảm bảo tất cả các lệnh gọi API (`axios`) và WebSocket (`StompJS`) trong các file `.js` không chứa `http://localhost:8080`.
     + **Đúng:** `axios.get("/api/menu")` và `const WS_URL = 'ws://localhost:3000/ws'` (nó sẽ tự proxy).
     + **Sai:** `axios.get("http://localhost:8080/api/menu")`.
+
     
 ## 🏃 Cách Chạy Chương trình
 Phải cần chạy **4 Dịch vụ** cùng lúc (mỗi dịch vụ trong một Terminal riêng).
@@ -140,42 +156,56 @@ Sau khi chạy tất cả các bước, ta có thể truy cập:
 
 ## 🌳 Cây Thư mục Dự án
 ```plaintext
-FoodOrdering
-├── 📁 Backend-app (Backend)
-│   ├── 📄 pom.xml
-│   └── 📁 src
-│       ├── 📁 main
-│       │   ├── 📁 java
-│       │   │   └── 📁 com/GourmetGo/foodorderingapp
-│       │   │       ├── 📄 FoodOrderingAppApplication.java
-│       │   │       ├── 📁 config
-│       │   │       ├── 📁 controller
-│       │   │       ├── 📁 dto
-│       │   │       ├── 📁 model
-│       │   │       ├── 📁 repository
-│       │   │       └── 📁 service
-│       │   └── 📁 resources
-│       │       ├── 📄 application.properties
-│       │       └── 📄 data.sql
-│       └── 📁 test
-│           └── 📁 java
-│               └── 📁 com/GourmetGo/foodorderingapp
-│                   └── 📁 service
-│                       └── 📄 OrderServiceTest.java
-│
-└── 📁 frontend-app (Frontend)
-    ├── 📄 package.json
-    ├── 📁 public
-    │   └── 📄 index.html
-    └── 📁 src
-        ├── 📄 App.js
-        ├── 📄 index.js
-        ├── 📁 components
-        │   ├── 📄 Cart.js
-        │   ├── 📄 Checkout.js
-        │   ├── 📄 KitchenDisplay.js
-        │   ├── 📄 Menu.js
-        │   └── 📄 OrderStatus.js
-        └── 📁 context
-            └── 📄 CartContext.js
+📂 FoodOrdering/
+├── 📂 backend-app/
+│   ├── ⚙️ pom.xml                      # Phụ thuộc Maven và build project
+│   └── 📂 src/
+│       └── 📂 main/
+│           ├── 📂 java/
+│           │   └── 📦 com/GourmetGo/foodorderingapp/
+│           │       ├── 📂 config/
+│           │       │   └── 📄 WebSocketConfig.java    # Cấu hình WebSocket, STOMP, và CORS
+│           │       ├── 📂 controller/
+│           │       │   ├── 📄 MenuController.java     # API lấy thực đơn
+│           │       │   ├── 📄 OrderController.java    # API nhận đơn hàng (đẩy vào queue)
+│           │       │   └── 📄 PaymentController.java  # API giả lập thanh toán
+│           │       ├── 📂 dto/
+│           │       │   ├── 📄 MenuItemDTO.java        # DTO cho Menu (tránh lỗi Lazy)
+│           │       │   ├── 📄 OrderRequest.java       # DTO nhận yêu cầu từ client
+│           │       │   └── ...
+│           │       ├── 📂 model/
+│           │       │   ├── 📄 MenuItem.java           # Entity Menu (liên kết Lazy)
+│           │       │   ├── 📄 Order.java              # Entity Đơn hàng
+│           │       │   ├── 📄 OrderItem.java
+│           │       │   ├── 📄 User.java
+│           │       │   └── 📄 OrderStatus.java        # Enum (RECEIVED, PREPARING, ...)
+│           │       ├── 📂 repository/
+│           │       │   ├── 📄 MenuItemRepository.java # Giao diện Spring Data JPA
+│           │       │   ├── 📄 OrderRepository.java
+│           │       │   └── ...
+│           │       ├── 📂 service/
+│           │       │   ├── 📄 MenuService.java        # Logic lấy và chuyển đổi Menu -> DTO
+│           │       │   ├── 📄 OrderService.java       # Logic đẩy vào Redis Queue
+│           │       │   └── 📄 OrderBatchProcessor.java # Logic @Scheduled lấy từ Queue, lưu CSDL, gửi WS
+│           │       └── 📄 FoodOrderingAppApplication.java # Lớp chính
+│           └── 📂 resources/
+│               ├── ⚙️ application.properties          # Cấu hình Spring, CSDL, Redis
+│               └── 🛢️ data.sql                        # (Tùy chọn) Dữ liệu mẫu ban đầu
+└── 📂 frontend-app/
+    ├── 📂 public/
+    │   └── 🌐 index.html
+    ├── 📂 src/
+    │   ├── 📂 components/
+    │   │   ├── 📜 Checkout.js             # Logic thanh toán, gửi đơn hàng (async)
+    │   │   ├── 📜 KitchenDisplay.js       # Màn hình bếp, kết nối WebSocket (STOMP + SockJS)
+    │   │   ├── 📜 Menu.js                 # Hiển thị thực đơn (gọi API /api/menu)
+    │   │   └── ...
+    │   ├── 📂 context/
+    │   │   └── 📜 CartContext.js          # Quản lý state giỏ hàng (useCart, clearCart)
+    │   ├── 📂 pages/
+    │   │   ├── 📜 HomePage.js
+    │   │   └── 📜 KitchenPage.js
+    │   ├── 📜 App.js                      # Bộ định tuyến (React Router)
+    │   └── 📜 index.js                    # Điểm vào, bọc <BrowserRouter> và <CartProvider>
+    └── ⚙️ package.json                    # Phụ thuộc NPM        # Điểm vào, bọc <BrowserRouter> và <CartProvider>
 ```
