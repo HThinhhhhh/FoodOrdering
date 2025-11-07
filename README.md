@@ -158,54 +158,69 @@ Sau khi chạy tất cả các bước, ta có thể truy cập:
 ```plaintext
 📂 FoodOrdering/
 ├── 📂 backend-app/
-│   ├── ⚙️ pom.xml                      # Phụ thuộc Maven và build project
+│   ├── ⚙️ pom.xml                      # Phụ thuộc Maven (Spring, JPA, Redis, WS)
 │   └── 📂 src/
-│       └── 📂 main/
-│           ├── 📂 java/
-│           │   └── 📦 com/GourmetGo/foodorderingapp/
-│           │       ├── 📂 config/
-│           │       │   └── 📄 WebSocketConfig.java    # Cấu hình WebSocket, STOMP, và CORS
-│           │       ├── 📂 controller/
-│           │       │   ├── 📄 MenuController.java     # API lấy thực đơn
-│           │       │   ├── 📄 OrderController.java    # API nhận đơn hàng (đẩy vào queue)
-│           │       │   └── 📄 PaymentController.java  # API giả lập thanh toán
-│           │       ├── 📂 dto/
-│           │       │   ├── 📄 MenuItemDTO.java        # DTO cho Menu (tránh lỗi Lazy)
-│           │       │   ├── 📄 OrderRequest.java       # DTO nhận yêu cầu từ client
-│           │       │   └── ...
-│           │       ├── 📂 model/
-│           │       │   ├── 📄 MenuItem.java           # Entity Menu (liên kết Lazy)
-│           │       │   ├── 📄 Order.java              # Entity Đơn hàng
-│           │       │   ├── 📄 OrderItem.java
-│           │       │   ├── 📄 User.java
-│           │       │   └── 📄 OrderStatus.java        # Enum (RECEIVED, PREPARING, ...)
-│           │       ├── 📂 repository/
-│           │       │   ├── 📄 MenuItemRepository.java # Giao diện Spring Data JPA
-│           │       │   ├── 📄 OrderRepository.java
-│           │       │   └── ...
-│           │       ├── 📂 service/
-│           │       │   ├── 📄 MenuService.java        # Logic lấy và chuyển đổi Menu -> DTO
-│           │       │   ├── 📄 OrderService.java       # Logic đẩy vào Redis Queue
-│           │       │   └── 📄 OrderBatchProcessor.java # Logic @Scheduled lấy từ Queue, lưu CSDL, gửi WS
-│           │       └── 📄 FoodOrderingAppApplication.java # Lớp chính
-│           └── 📂 resources/
-│               ├── ⚙️ application.properties          # Cấu hình Spring, CSDL, Redis
-│               └── 🛢️ data.sql                        # (Tùy chọn) Dữ liệu mẫu ban đầu
+│       ├── 📂 main/
+│       │   ├── 📂 java/
+│       │   │   └── 📦 com/GourmetGo/foodorderingapp/
+│       │   │       ├── 📂 config/
+│       │   │       │   ├── 📄 RateLimitingInterceptor.java # Bộ chặn giới hạn request
+│       │   │       │   ├── 📄 WebMvcConfig.java          # Áp dụng bộ chặn
+│       │   │       │   └── 📄 WebSocketConfig.java    # Cấu hình WebSocket, STOMP, và CORS
+│       │   │       ├── 📂 controller/
+│       │   │       │   ├── 📄 KitchenController.java   # Nhận cập nhật trạng thái từ KDS
+│       │   │       │   ├── 📄 MenuController.java     # API GET /api/menu (dùng DTO)
+│       │   │       │   ├── 📄 OrderController.java    # API POST /api/orders (đẩy vào queue)
+│       │   │       │   ├── 📄 PaymentController.java  # API POST /api/payments/mock
+│       │   │       │   └── 📄 ReviewController.java   # API POST /api/reviews
+│       │   │       ├── 📂 dto/
+│       │   │       │   ├── 📄 MenuItemDTO.java        # DTO cho Menu (tránh lỗi Lazy)
+│       │   │       │   ├── 📄 OrderItemRequest.java   
+│       │   │       │   ├── 📄 OrderRequest.java       # DTO nhận yêu cầu từ client
+│       │   │       │   ├── 📄 PaymentResponse.java
+│       │   │       │   ├── 📄 ReviewRequest.java
+│       │   │       │   └── 📄 UpdateStatusRequest.java # DTO cho KDS cập nhật status
+│       │   │       ├── 📂 model/
+│       │   │       │   ├── 📄 MenuItem.java           # Entity Menu (liên kết Lazy)
+│       │   │       │   ├── 📄 Order.java              # Entity Đơn hàng
+│       │   │       │   ├── 📄 OrderItem.java
+│       │   │       │   ├── 📄 OrderStatus.java        # Enum (RECEIVED, PREPARING, ...)
+│       │   │       │   ├── 📄 Review.java
+│       │   │       │   ├── 📄 Role.java               # Enum (DINER, KITCHEN)
+│       │   │       │   └── 📄 User.java
+│       │   │       ├── 📂 repository/
+│       │   │       │   ├── 📄 MenuItemRepository.java # Giao diện Spring Data JPA
+│       │   │       │   ├── 📄 OrderRepository.java
+│       │   │       │   ├── 📄 ReviewRepository.java
+│       │   │       │   └── 📄 UserRepository.java
+│       │   │       ├── 📂 service/
+│       │   │       │   ├── 📄 KitchenService.java     # Logic cập nhật status, gửi WS cho khách
+│       │   │       │   ├── 📄 MenuService.java        # Logic lấy và chuyển đổi Menu -> DTO
+│       │   │       │   ├── 📄 OrderBatchProcessor.java # Logic @Scheduled lấy từ Queue, lưu CSDL, gửi WS
+│       │   │       │   ├── 📄 OrderService.java       # Logic đẩy vào Redis Queue (ĐÃ XÓA WS)
+│       │   │       │   └── 📄 ReviewService.java
+│       │   │       └── 📄 FoodOrderingAppApplication.java # Lớp chính (@EnableScheduling)
+│       │   └── 📂 resources/
+│       │       ├── ⚙️ application.properties          # Cấu hình Spring, CSDL, Redis
+│       │       └── 🛢️ data.sql                        # Dữ liệu mẫu ban đầu
+│       └── 📂 test/
+│           └── 📂 java/
+│               └── 📦 .../
+│                   └── 📄 OrderServiceTest.java
 └── 📂 frontend-app/
     ├── 📂 public/
     │   └── 🌐 index.html
     ├── 📂 src/
     │   ├── 📂 components/
-    │   │   ├── 📜 Checkout.js             # Logic thanh toán, gửi đơn hàng (async)
+    │   │   ├── 📜 Cart.js                 # Component Giỏ hàng
+    │   │   ├── 📜 Checkout.js             # Logic thanh toán, gửi đơn hàng (async, finally)
     │   │   ├── 📜 KitchenDisplay.js       # Màn hình bếp, kết nối WebSocket (STOMP + SockJS)
     │   │   ├── 📜 Menu.js                 # Hiển thị thực đơn (gọi API /api/menu)
-    │   │   └── ...
+    │   │   └── 📜 OrderStatus.js          # Trang khách hàng xem status real-time
     │   ├── 📂 context/
     │   │   └── 📜 CartContext.js          # Quản lý state giỏ hàng (useCart, clearCart)
-    │   ├── 📂 pages/
-    │   │   ├── 📜 HomePage.js
-    │   │   └── 📜 KitchenPage.js
     │   ├── 📜 App.js                      # Bộ định tuyến (React Router)
     │   └── 📜 index.js                    # Điểm vào, bọc <BrowserRouter> và <CartProvider>
-    └── ⚙️ package.json                    # Phụ thuộc NPM        # Điểm vào, bọc <BrowserRouter> và <CartProvider>
+    └── ⚙️ package.json                    # Phụ thuộc NPM (axios, stompjs, sockjs)
+    
 ```

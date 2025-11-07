@@ -17,5 +17,10 @@ public enum OrderStatus {
     /**
      * Món đã sẵn sàng để lấy.
      */
-    READY
+    READY,
+
+    /**
+     * Khách đã lấy hàng (hoàn thành)
+     */
+    COMPLETED // <-- THÊM DÒNG NÀY
 }

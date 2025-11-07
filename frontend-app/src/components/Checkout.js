@@ -3,25 +3,33 @@
 // --- PHẦN 1: CÁC IMPORT (ĐÃ ĐẦY ĐỦ) ---
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/CartContext'; // <-- Đảm bảo 'useCart' (chữ C hoa)
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // <-- Import AuthContext
 
 // --- PHẦN 2: HẰNG SỐ (GIỮ NGUYÊN) ---
 const API_URL = 'http://localhost:8080/api';
 
 export const Checkout = () => {
-    // --- PHẦN 3: CÁC HOOKS (GIỮ NGUYÊN) ---
-    const { cartItems, clearCart } = useCart();
+    // --- PHẦN 3: CÁC HOOKS ---
+    const { cartItems, clearCart } = useCart(); // <-- Đảm bảo 'useCart' (chữ C hoa)
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const { currentUser } = useAuth(); // Lấy người dùng hiện tại
 
-    // Giả định chúng ta có ID người dùng (ví dụ: 1)
-    const MOCK_USER_ID = 1;
+    // const MOCK_USER_ID = 1; // Xóa ID giả lập
 
-    // --- PHẦN 4: HÀM ĐÃ SỬA VỚI "FINALLY" ---
+    // --- PHẦN 4: HÀM ĐÃ SỬA VỚI LOGIC XÁC THỰC ---
     const handleCheckout = async () => {
         if (cartItems.length === 0) {
             alert("Vui lòng thêm món vào giỏ hàng!");
+            return;
+        }
+
+        // KIỂM TRA ĐĂNG NHẬP
+        if (!currentUser) {
+            alert("Vui lòng đăng nhập để thanh toán.");
+            navigate('/login'); // Chuyển đến trang đăng nhập
             return;
         }
 
@@ -35,9 +43,9 @@ export const Checkout = () => {
             if (paymentResponse.data.status === "SUCCESS") {
                 console.log("Thanh toán thành công:", paymentResponse.data.transaction_id);
 
-                // 2. Định dạng và gửi đơn hàng
+                // 2. Định dạng và gửi đơn hàng (KHÔNG CẦN userId)
                 const orderRequest = {
-                    userId: MOCK_USER_ID,
+                    // userId đã bị xóa, backend sẽ tự lấy từ người đăng nhập
                     items: cartItems.map(item => ({
                         menuItemId: item.id,
                         quantity: item.quantity
@@ -56,12 +64,18 @@ export const Checkout = () => {
 
                 // 4. Thông báo và điều hướng
                 alert("Đơn hàng của bạn đã được tiếp nhận và đang được xử lý!");
-                navigate('/');
+                navigate('/my-orders'); // Điều hướng đến trang đơn hàng
 
             }
         } catch (error) {
-            console.error("Lỗi khi thanh toán hoặc gửi đơn hàng:", error);
-            alert("Đã xảy ra lỗi, vui lòng thử lại.");
+            // Xử lý lỗi 401/403 (Chưa xác thực)
+            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+                alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+                navigate('/login');
+            } else {
+                console.error("Lỗi khi thanh toán hoặc gửi đơn hàng:", error);
+                alert("Đã xảy ra lỗi, vui lòng thử lại.");
+            }
         } finally {
             // 'finally' sẽ luôn chạy, đảm bảo nút được reset
             setIsLoading(false); // <-- Tắt loading

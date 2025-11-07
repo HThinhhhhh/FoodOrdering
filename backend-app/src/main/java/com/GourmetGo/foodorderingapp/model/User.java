@@ -1,21 +1,28 @@
 package com.GourmetGo.foodorderingapp.model;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+// --- THÊM CÁC IMPORT NÀY ---
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import java.util.Collection;
+import java.util.Collections;
+// --- KẾT THÚC IMPORT ---
+
 import java.util.Set;
 import java.io.Serializable;
 
 @Entity
-@Table(name = "app_user") // Đổi tên bảng (User là từ khóa SQL)
+@Table(name = "app_user")
 @Getter
 @Setter
 @NoArgsConstructor
-public class User implements Serializable{
+public class User implements Serializable, UserDetails { // <-- 1. THÊM "UserDetails"
 
     private static final long serialVersionUID = 1L;
 
@@ -23,26 +30,40 @@ public class User implements Serializable{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Tên đăng nhập duy nhất */
     @Column(nullable = false, unique = true)
     private String username;
 
-    /** Mật khẩu (sẽ được mã hóa) */
-    @Column(nullable = false)
+    @Column(nullable = false) // Không cần length 60 nữa
     private String password;
 
-    /** Vai trò của người dùng (DINER hoặc KITCHEN) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
-    // Quan hệ: Một User có thể có nhiều Order
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("user-order")
     private Set<Order> orders;
 
-    // Quan hệ: Một User có thể viết nhiều Review
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("user-review")
     private Set<Review> reviews;
+
+    // --- 2. THÊM CÁC PHƯƠNG THỨC CỦA UserDetails ---
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.name());
+        return Collections.singletonList(authority);
+    }
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
 }

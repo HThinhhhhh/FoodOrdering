@@ -2,22 +2,24 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-// --- BẮT ĐẦU SỬA ĐỔI 1: THÊM IMPORT MỚI ---
-import { CartProvider } from './context/CartContext'; // <-- Thêm import này
-// --- KẾT THÚC SỬA ĐỔI 1 ---
+// --- 1. IMPORT TẤT CẢ CÁC PROVIDER CỦA BẠN ---
+import { AuthProvider } from './context/AuthContext';
+import { MenuProvider } from './context/MenuContext';
+import { CartProvider } from './context/CartContext';
 
-// (Đây là import đã sửa từ trước)
-// import './index.css';
+// (import './index.css';)
 import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    // --- BẮT ĐẦU SỬA ĐỔI 2: BỌC <App /> THÊM MỘT LỚP ---
+    // --- 2. BỌC TẤT CẢ CÁC PROVIDER QUANH APP ---
     <BrowserRouter>
-        <CartProvider> {/* <-- Thêm thẻ này */}
-            {/* (Phần <React.StrictMode> đã sửa từ trước) */}
-            <App />
-        </CartProvider> {/* <-- Thêm thẻ này */}
+        <AuthProvider> {/* Cung cấp 'currentUser' */}
+            <MenuProvider> {/* Cung cấp 'getItemName' */}
+                <CartProvider> {/* Cung cấp 'cartItems', 'addToCart', v.v. */}
+                    <App />
+                </CartProvider>
+            </MenuProvider>
+        </AuthProvider>
     </BrowserRouter>
-    // --- KẾT THÚC SỬA ĐỔI 2 ---
 );

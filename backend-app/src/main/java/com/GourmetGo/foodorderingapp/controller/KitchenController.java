@@ -7,7 +7,14 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
-@Controller // Quan trọng: Đây là @Controller, không phải @RestController
+// --- THÊM CÁC IMPORT NÀY ---
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import java.util.List;
+import java.util.Map;
+// --- KẾT THÚC THÊM IMPORT ---
+
+@Controller
 public class KitchenController {
 
     @Autowired
@@ -16,16 +23,21 @@ public class KitchenController {
     /**
      * Lắng nghe các tin nhắn từ Bếp (KDS) gửi đến
      * đích "/app/kitchen/update-status".
-     *
-     * @param request DTO chứa orderId và trạng thái mới.
      */
     @MessageMapping("/kitchen/update-status")
     public void handleStatusUpdate(@Payload UpdateStatusRequest request) {
-        // Client (KDS) gửi tin nhắn đến "/app/kitchen/update-status"
-        // Phương thức này sẽ được gọi
-
-        // Chúng ta chỉ cần ủy quyền cho Service xử lý
-        // Service sẽ tự động thông báo cho Thực khách (Diner)
         kitchenService.updateOrderStatus(request);
     }
+
+    // --- BẮT ĐẦU: THÊM API ENDPOINT MỚI ---
+    /**
+     * Cung cấp API REST để KDS lấy tất cả các đơn hàng đang hoạt động
+     * khi tải trang lần đầu.
+     */
+    @GetMapping("/api/kitchen/active-orders")
+    @ResponseBody // (Vì đây là @Controller, không phải @RestController)
+    public List<Map<String, Object>> getActiveOrders() {
+        return kitchenService.getActiveOrders();
+    }
+    // --- KẾT THÚC: THÊM API ENDPOINT MỚI ---
 }

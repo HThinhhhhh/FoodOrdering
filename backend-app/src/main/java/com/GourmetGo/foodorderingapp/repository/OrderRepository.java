@@ -9,10 +9,12 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    // Ví dụ về một phương thức tìm kiếm tùy chỉnh:
-    // Tìm các đơn hàng theo trạng thái
+    // (Giữ nguyên các phương thức cũ)
     List<Order> findByStatus(OrderStatus status);
-
-    // Tìm các đơn hàng của một người dùng cụ thể
     List<Order> findByUserId(Long userId);
+    List<Order> findByStatusNot(OrderStatus status); // (Phương thức này bạn đã thêm ở bước KDS)
+
+    // --- THÊM PHƯƠG THỨC NÀY ---
+    /** Tìm các đơn hàng của một người dùng, sắp xếp theo thời gian đặt hàng mới nhất */
+    List<Order> findByUserIdOrderByOrderTimeDesc(Long userId);
 }
