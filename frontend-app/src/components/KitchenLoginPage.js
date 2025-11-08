@@ -1,19 +1,18 @@
-// src/components/LoginPage.js
+// src/components/KitchenLoginPage.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-export const LoginPage = () => {
+export const KitchenLoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, currentUser, logout } = useAuth(); // Lấy cả currentUser và logout
+    const { login, currentUser, logout } = useAuth();
     const navigate = useNavigate();
 
-    // Nếu đã đăng nhập Khách, tự động chuyển hướng
     useEffect(() => {
-        if (currentUser && currentUser.role === 'DINER') {
-            navigate('/');
+        if (currentUser && currentUser.role === 'KITCHEN') {
+            navigate('/kitchen');
         }
     }, [currentUser, navigate]);
 
@@ -22,22 +21,21 @@ export const LoginPage = () => {
         setError('');
         try {
             const user = await login(username, password);
-
-            // KIỂM TRA VAI TRÒ
-            if (user.role === 'DINER') {
-                navigate('/'); // Đăng nhập Khách thành công
+            if (user.role === 'KITCHEN') {
+                navigate('/kitchen');
             } else {
-                setError('Đây không phải tài khoản của khách hàng.');
-                await logout(); // Đăng xuất tài khoản bếp nếu lỡ đăng nhập nhầm
+                setError('Đây không phải tài khoản của nhân viên bếp.');
+                await logout();
             }
         } catch (err) {
-            setError('Đăng nhập thất bại. Vui lòng kiểm tra lại username/password.');
+            setError('Đăng nhập thất bại.');
         }
     };
 
     return (
+        // (JSX cho form đăng nhập)
         <div style={{ padding: '20px' }}>
-            <h2>Đăng nhập Khách hàng</h2>
+            <h2>Đăng nhập Màn hình Bếp (KDS)</h2>
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Username: </label>
@@ -48,9 +46,8 @@ export const LoginPage = () => {
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
                 </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" style={{ marginTop: '10px' }}>Đăng nhập</button>
+                <button type="submit" style={{ marginTop: '10px' }}>Đăng nhập Bếp</button>
             </form>
-            {/* (Bạn có thể thêm link đến trang Đăng ký ở đây) */}
         </div>
     );
 };

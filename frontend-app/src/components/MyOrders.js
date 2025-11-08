@@ -1,7 +1,10 @@
 // src/components/MyOrders.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // Dùng để điều hướng
+import { Link } from 'react-router-dom';
+
+// --- 1. LẤY API URL TỪ BIẾN MÔI TRƯỜNG ---
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const MyOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -11,26 +14,25 @@ export const MyOrders = () => {
         const fetchOrders = async () => {
             setLoading(true);
             try {
-                // Gọi API backend mới mà chúng ta vừa tạo
-                const response = await axios.get('/api/orders/my-orders');
+                // --- 2. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
+                const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 setOrders(response.data);
             } catch (error) {
-                console.error("Lỗi khi tải đơn hàng của tôi:", error);
+                console.error("Lỗi khi tải đơn hàng của tôi:", error); // <-- Đây là lỗi bạn thấy trong log
             }
             setLoading(false);
         };
 
         fetchOrders();
-    }, []); // Chỉ chạy 1 lần khi trang tải
+    }, []);
 
+    // (Phần JSX return giữ nguyên)
     if (loading) {
         return <p>Đang tải các đơn hàng của bạn...</p>;
     }
-
     if (orders.length === 0) {
         return <p>Bạn chưa có đơn hàng nào.</p>;
     }
-
     return (
         <div style={{ padding: '20px' }}>
             <h3>Đơn hàng của tôi</h3>
@@ -52,7 +54,6 @@ export const MyOrders = () => {
                         <td>${order.totalAmount.toFixed(2)}</td>
                         <td>{new Date(order.orderTime).toLocaleString()}</td>
                         <td>
-                            {/* Nhấp vào đây sẽ đi đến trang OrderStatus */}
                             <Link to={`/order-status/${order.id}`}>
                                 Theo dõi
                             </Link>

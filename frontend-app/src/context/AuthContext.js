@@ -1,5 +1,10 @@
+// src/context/AuthContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+
+// --- 1. SỬA LẠI CÁCH LẤY API URL ---
+// Giống như cách MenuContext.js làm, lấy URL từ biến môi trường
+const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
 
 const AuthContext = createContext();
 
@@ -10,7 +15,8 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        axios.get("/api/auth/me")
+        // 2. Cập nhật hàm này để gọi URL đầy đủ
+        axios.get(`${API_URL}/api/auth/me`)
             .then(response => {
                 setCurrentUser(response.data);
                 setLoading(false);
@@ -21,29 +27,31 @@ export const AuthProvider = ({ children }) => {
             });
     }, []);
 
-    // --- SỬA LOGIC HÀM LOGIN ---
     const login = async (username, password) => {
         try {
-            // 1. Gửi JSON (thay vì URLSearchParams)
-            const response = await axios.post('/api/auth/login', { username, password });
-
-            // 2. API mới trả về User, gán trực tiếp
+            // 3. Cập nhật hàm này để gọi URL đầy đủ
+            const response = await axios.post(`${API_URL}/api/auth/login`, { username, password });
             setCurrentUser(response.data);
-
+            return response.data;
         } catch (error) {
             console.error("Lỗi đăng nhập:", error);
             throw error;
         }
     };
-    // --- KẾT THÚC SỬA HÀM LOGIN ---
 
     const register = async (username, password) => {
-        await axios.post('/api/auth/register', { username, password });
+        // 4. Cập nhật hàm này để gọi URL đầy đủ
+        await axios.post(`${API_URL}/api/auth/register`, { username, password });
     };
 
     const logout = async () => {
-        await axios.post('/api/auth/logout');
-        setCurrentUser(null);
+        try {
+            // 5. Cập nhật hàm này để gọi URL đầy đủ
+            await axios.post(`${API_URL}/api/auth/logout`);
+            setCurrentUser(null);
+        } catch (error) {
+            console.error("Lỗi đăng xuất:", error);
+        }
     };
 
     const value = {

@@ -2,52 +2,65 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+import axios from 'axios'; // <-- Đảm bảo bạn đã import axios
 
-// Trỏ WebSocket đến chính máy chủ React (3000), 
-// nó sẽ tự động chuyển tiếp
-const WS_URL = 'ws://localhost:3000/ws';
+// --- SỬA LẠI CÁCH KẾT NỐI ---
+const API_URL = process.env.REACT_APP_API_URL; // http://localhost:8080
+const BACKEND_WS_URL = `${API_URL}/ws`;
+// ----------------------------
 
 export const OrderStatus = () => {
-    const { orderId } = useParams(); // Lấy ID từ URL (vd: /order-status/123)
-    const [orderStatus, setOrderStatus] = useState("Đang chờ xác nhận...");
+    const { orderId } = useParams();
+    const [orderStatus, setOrderStatus] = useState("Đang tải trạng thái...");
     const [stompClient, setStompClient] = useState(null);
 
     useEffect(() => {
-        // 1. Khởi tạo Stomp Client
-        const client = new Client({
-            brokerURL: WS_URL,
-            reconnectDelay: 5000,
-            onConnect: () => {
-                console.log("Đã kết nối WebSocket!");
+        const fetchCurrentStatus = async () => {
+            try {
+                // --- SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
+                const response = await axios.get(`${API_URL}/api/orders/my-orders`);
+                const allOrders = response.data;
+                const currentOrder = allOrders.find(o => o.id.toString() === orderId);
+                if (currentOrder) {
+                    setOrderStatus(currentOrder.status);
+                } else {
+                    setOrderStatus("Không tìm thấy đơn hàng");
+                }
+            } catch (e) {
+                console.error("Lỗi khi tải trạng thái đơn hàng:", e);
+                setOrderStatus("Lỗi tải trạng thái");
+            }
+        };
 
-                // 2. Đăng ký (subscribe) vào topic động
-                const topic = `/topic/order-status/${orderId}`;
-                console.log("Đang lắng nghe trên:", topic);
+        const client = new Client();
+        client.webSocketFactory = () => {
+            return new SockJS(BACKEND_WS_URL);
+        };
 
-                client.subscribe(topic, (message) => {
-                    const update = JSON.parse(message.body);
-                    console.log("Nhận được cập nhật:", update);
-                    // Cập nhật trạng thái (ví dụ: "PREPARING", "READY")
-                    setOrderStatus(update.newStatus);
-                });
-            },
-            onStompError: (frame) => {
-                console.error("Lỗi STOMP:", frame);
-            },
-        });
+        client.onConnect = () => {
+            console.log("Đã kết nối WebSocket (Trang thái Đơn hàng)!");
+            fetchCurrentStatus();
 
-        // 3. Kích hoạt kết nối
+            const topic = `/topic/order-status/${orderId}`;
+            client.subscribe(topic, (message) => {
+                const update = JSON.parse(message.body);
+                console.log("Nhận được cập nhật:", update);
+                setOrderStatus(update.newStatus);
+            });
+        };
+
+        client.onStompError = (frame) => console.error("Lỗi STOMP:", frame);
         client.activate();
         setStompClient(client);
 
-        // 4. Cleanup: Ngắt kết nối khi component bị unmount
         return () => {
             if (client) {
                 client.deactivate();
                 console.log("Đã ngắt kết nối WebSocket.");
             }
         };
-    }, [orderId]); // Chỉ chạy lại khi orderId thay đổi
+    }, [orderId]);
 
     return (
         <div>

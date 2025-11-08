@@ -1,21 +1,24 @@
 // src/components/KitchenDisplay.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import axios from 'axios'; // <-- 1. IMPORT AXIOS
-import { useMenu } from '../context/MenuContext'; // <-- 2. IMPORT MENU CONTEXT
+import axios from 'axios';
+import { useMenu } from '../context/MenuContext';
 
-// (Cấu hình giữ nguyên)
-const BACKEND_WS_URL = 'http://localhost:8080/ws';
+// ---- CẤU HÌNH ĐỘNG (SỬA LỖI) ----
+// Lấy API URL từ biến môi trường (sẽ là http://localhost:8080)
+const KITCHEN_API_URL = process.env.REACT_APP_API_URL;
+const BACKEND_WS_URL = `${KITCHEN_API_URL}/ws`; // Trỏ đến 8080/ws
+// ---------------------------------
+
 const SUB_TOPIC = '/topic/kitchen';
 const SEND_DESTINATION = '/app/kitchen/update-status';
 
-/**
- * Sửa OrderCard để chấp nhận { getItemName }
- */
-const OrderCard = ({ order, onUpdateStatus, getItemName }) => { // <-- 3. NHẬN getItemName
-
+// (OrderCard giữ nguyên)
+const OrderCard = ({ order, onUpdateStatus, getItemName }) => {
+    // ... (Giữ nguyên toàn bộ code của OrderCard)
     const renderActionButtons = () => {
+        // (Giữ nguyên logic switch/case)
         switch (order.status) {
             case 'RECEIVED':
                 return (
@@ -36,10 +39,9 @@ const OrderCard = ({ order, onUpdateStatus, getItemName }) => { // <-- 3. NHẬN
                     </button>
                 );
             case 'READY':
-                // --- 4. THÊM NÚT HOÀN THÀNH ---
                 return (
                     <button
-                        className="btn completed" // Thêm class mới
+                        className="btn completed"
                         onClick={() => onUpdateStatus(order.id, 'COMPLETED')}
                     >
                         Đã giao
@@ -49,12 +51,10 @@ const OrderCard = ({ order, onUpdateStatus, getItemName }) => { // <-- 3. NHẬN
                 return null;
         }
     };
-
     return (
         <div className="order-card">
             <h4>Đơn hàng #{order.id}</h4>
             <ul>
-                {/* --- 5. HIỂN THỊ TÊN MÓN ĂN THẬT --- */}
                 {order.items && order.items.map((item, index) => (
                     <li key={index}>
                         {item.quantity} x {getItemName(item.menuItemId)}
@@ -66,38 +66,29 @@ const OrderCard = ({ order, onUpdateStatus, getItemName }) => { // <-- 3. NHẬN
     );
 };
 
-
-/**
- * Component KDS Chính (Đã nâng cấp)
- */
+// (Component KDS Chính giữ nguyên logic, chỉ thay đổi URL)
 export const KitchenDisplay = () => {
-    const [stompClient, setStompClient] = useState(null);
+    const stompClientRef = useRef(null);
     const [orders, setOrders] = useState([]);
-    const { getItemName } = useMenu(); // <-- 6. LẤY HÀM TRA CỨU TỪ CONTEXT
+    const { getItemName } = useMenu();
 
-    // --- 7. SỬA ĐỔI USEEFFECT ---
     useEffect(() => {
-        // --- 7a. HÀM TẢI CÁC ĐƠN HÀNG ĐANG HOẠT ĐỘNG ---
+        const client = new Client();
+        client.webSocketFactory = () => new SockJS(BACKEND_WS_URL); // Đã trỏ đúng 8080
+
         const fetchActiveOrders = async () => {
             try {
-                const response = await axios.get("/api/kitchen/active-orders");
-                setOrders(response.data); // Set các đơn hàng ban đầu
-                console.log("KDS Đã tải " + response.data.length + " đơn hàng đang hoạt động.");
+                // SỬA LỖI: Dùng KITCHEN_API_URL (trỏ đến 8080)
+                const response = await axios.get(`${KITCHEN_API_URL}/api/kitchen/active-orders`);
+                setOrders(response.data);
+                console.log("KDS Đã tải " + response.data.length + " đơn hàng đang hoạt động từ 8080.");
             } catch (error) {
                 console.error("Lỗi khi tải đơn hàng đang hoạt động:", error);
             }
         };
 
-        // 1. Khởi tạo Client
-        const client = new Client();
-        client.webSocketFactory = () => new SockJS(BACKEND_WS_URL);
-
-        // 3. Xử lý khi kết nối thành công
         client.onConnect = () => {
-            console.log("KDS Đã kết nối WebSocket!");
-
-            // --- 7b. TẢI ĐƠN HÀNG NGAY KHI KẾT NỐI ---
-            // (Để tránh race condition: kết nối xong -> tải đơn -> lắng nghe)
+            console.log("KDS Đã kết nối WebSocket (8080)!");
             fetchActiveOrders();
 
             client.subscribe(SUB_TOPIC, (message) => {
@@ -105,15 +96,11 @@ export const KitchenDisplay = () => {
                     const newOrder = JSON.parse(message.body);
                     console.log("Đơn hàng MỚI NHẬN (WS):", newOrder);
 
-                    // --- 7c. LOGIC CHỐNG TRÙNG LẶP ---
-                    // Thêm đơn hàng mới, nhưng chỉ khi nó chưa có trong danh sách
                     setOrders(prevOrders => {
                         const orderExists = prevOrders.some(o => o.id === newOrder.id);
                         if (orderExists) {
-                            // Nếu đã tồn tại (có thể từ fetchActiveOrders), hãy cập nhật nó
                             return prevOrders.map(o => o.id === newOrder.id ? newOrder : o);
                         } else {
-                            // Nếu là đơn hàng mới tinh, thêm vào
                             return [...prevOrders, newOrder];
                         }
                     });
@@ -125,32 +112,29 @@ export const KitchenDisplay = () => {
 
         client.onStompError = (frame) => console.error("Lỗi STOMP (KDS):", frame);
         client.activate();
-        setStompClient(client);
+        stompClientRef.current = client;
 
         return () => {
-            if (client) {
-                client.deactivate();
+            if (stompClientRef.current) {
+                stompClientRef.current.deactivate();
                 console.log("KDS Đã ngắt kết nối.");
             }
         };
-    }, []); // Chỉ chạy 1 lần
+    }, []);
 
-    // --- 8. SỬA ĐỔI HÀM CẬP NHẬT TRẠNG THÁI ---
     const handleUpdateStatus = (orderId, newStatus) => {
-        if (stompClient && stompClient.connected) {
+        const client = stompClientRef.current;
+        if (client && client.connected) {
             const payload = { orderId: orderId, newStatus: newStatus };
 
-            stompClient.publish({
+            client.publish({
                 destination: SEND_DESTINATION,
                 body: JSON.stringify(payload)
             });
 
-            // Cập nhật trạng thái local
             if (newStatus === 'COMPLETED') {
-                // Nếu hoàn thành, XÓA nó khỏi màn hình KDS
                 setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
             } else {
-                // Nếu chỉ thay đổi trạng thái (RECEIVED -> PREPARING)
                 setOrders(prevOrders =>
                     prevOrders.map(order =>
                         order.id === orderId ? { ...order, status: newStatus } : order
@@ -162,13 +146,13 @@ export const KitchenDisplay = () => {
         }
     };
 
-    // Lọc đơn hàng (Giữ nguyên)
+    // (Phần lọc và render JSX giữ nguyên)
     const receivedOrders = orders.filter(o => o.status === 'RECEIVED');
     const preparingOrders = orders.filter(o => o.status === 'PREPARING');
     const readyOrders = orders.filter(o => o.status === 'READY');
 
-    // (Phần JSX render)
     return (
+        // (Toàn bộ JSX giữ nguyên)
         <div className="kds-container">
             {/* Cột 1: Đã nhận */}
             <div className="kds-column">
@@ -180,7 +164,7 @@ export const KitchenDisplay = () => {
                         key={order.id}
                         order={order}
                         onUpdateStatus={handleUpdateStatus}
-                        getItemName={getItemName} // <-- 9. TRUYỀN HÀM XUỐNG
+                        getItemName={getItemName}
                     />
                 ))}
             </div>
@@ -195,7 +179,7 @@ export const KitchenDisplay = () => {
                         key={order.id}
                         order={order}
                         onUpdateStatus={handleUpdateStatus}
-                        getItemName={getItemName} // <-- 9. TRUYỀN HÀM XUỐNG
+                        getItemName={getItemName}
                     />
                 ))}
             </div>
@@ -210,12 +194,12 @@ export const KitchenDisplay = () => {
                         key={order.id}
                         order={order}
                         onUpdateStatus={handleUpdateStatus}
-                        getItemName={getItemName} // <-- 9. TRUYỀN HÀM XUỐNG
+                        getItemName={getItemName}
                     />
                 ))}
             </div>
 
-            {/* (CSS) */}
+            {/* (CSS giữ nguyên) */}
             <style>{`
                 .kds-container { display: flex; flex-direction: row; gap: 15px; padding: 10px; background-color: #333; min-height: 100vh; }
                 .kds-column { flex: 1; background-color: #4a4a4a; border-radius: 8px; padding: 10px; }
@@ -228,7 +212,7 @@ export const KitchenDisplay = () => {
                 .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
                 .btn.prepare { background-color: #f1c40f; }
                 .btn.ready { background-color: #2ecc71; }
-                .btn.completed { background-color: #95a5a6; } /* <-- 10. THÊM CSS CHO NÚT MỚI */
+                .btn.completed { background-color: #95a5a6; }
             `}</style>
         </div>
     );

@@ -2,6 +2,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
+// --- 1. LẤY API URL TỪ BIẾN MÔI TRƯỜNG ---
+const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
+
 const MenuContext = createContext();
 
 export const useMenu = () => useContext(MenuContext);
@@ -11,14 +14,12 @@ export const MenuProvider = ({ children }) => {
     const [menuMap, setMenuMap] = useState(new Map());
 
     useEffect(() => {
-        // Tải thực đơn một lần khi ứng dụng khởi động
         const fetchMenu = async () => {
             try {
-                // API này đã trả về DTO an toàn (chúng ta đã sửa ở các bước trước)
-                const response = await axios.get("/api/menu");
+                // --- 2. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
+                const response = await axios.get(`${API_URL}/api/menu`);
                 setMenuItems(response.data);
 
-                // Tạo một Map để tra cứu nhanh (ID -> Tên món)
                 const newMap = new Map();
                 for (const item of response.data) {
                     newMap.set(item.id, item.name);
@@ -32,16 +33,15 @@ export const MenuProvider = ({ children }) => {
         };
 
         fetchMenu();
-    }, []); // Mảng rỗng đảm bảo chỉ chạy 1 lần
+    }, []);
 
-    // Hàm để tra cứu tên món ăn từ ID
     const getItemName = (menuItemId) => {
         return menuMap.get(menuItemId) || `(Món ID: ${menuItemId})`;
     };
 
     const value = {
-        menuItems, // Danh sách đầy đủ
-        getItemName // Hàm tra cứu
+        menuItems,
+        getItemName
     };
 
     return (

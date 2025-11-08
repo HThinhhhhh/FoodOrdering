@@ -3,33 +3,32 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
 
-// Giả định API_URL của bạn
-const API_URL = 'http://localhost:8080/api';
+// --- 1. LẤY API URL TỪ BIẾN MÔI TRƯỜNG ---
+const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
 
 export const Menu = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // State cho bộ lọc
     const [isVegetarian, setIsVegetarian] = useState(false);
     const [isSpicy, setIsSpicy] = useState(false);
 
-    const { addToCart } = useCart(); // Lấy hàm addToCart từ Context
+    const { addToCart } = useCart();
 
     useEffect(() => {
         fetchMenu();
-    }, [isVegetarian, isSpicy]); // Gọi lại API khi filter thay đổi
+    }, [isVegetarian, isSpicy]);
 
     const fetchMenu = async () => {
         setLoading(true);
         try {
-            // Xây dựng params dựa trên state
             const params = {
                 "is_vegetarian": isVegetarian ? true : undefined,
                 "is_spicy": isSpicy ? true : undefined,
             };
 
-            const response = await axios.get("/api/menu", { params });
+            // --- 2. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
+            const response = await axios.get(`${API_URL}/api/menu`, { params });
             setMenuItems(response.data);
         } catch (error) {
             console.error("Lỗi khi tải thực đơn:", error);
@@ -38,6 +37,7 @@ export const Menu = () => {
     };
 
     return (
+        // (Phần JSX return giữ nguyên)
         <div>
             <h3>Thực đơn</h3>
             {/* Bộ lọc */}
