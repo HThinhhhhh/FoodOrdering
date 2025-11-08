@@ -48,17 +48,15 @@ public class SecurityConfig {
     }
 
     // --- BEAN MỚI: CẤU HÌNH CORS TOÀN CỤC ---
-    // (Tệp của bạn đang thiếu Bean này)
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Cho phép cả 2 cổng frontend truy cập
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001")); // Cho phép cả 2 cổng frontend
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true); // Cho phép gửi cookie (session)
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Áp dụng cho tất cả các đường dẫn
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
     // --- KẾT THÚC BEAN MỚI ---
@@ -68,10 +66,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 // --- THÊM CẤU HÌNH CORS VÀO ĐÂY ---
-                // (Tệp của bạn đang thiếu dòng này)
-                .cors(withDefaults()) // Kích hoạt CORS bằng Bean ở trên
+                .cors(withDefaults()) // Kích hoạt CORS
 
-                .csrf(csrf -> csrf.disable())
+                // --- THÊM CẤU HÌNH VÔ HIỆU HÓA CSRF ---
+                .csrf(csrf -> csrf.disable()) // Tắt CSRF để cho phép /ws/info
+
                 .authorizeHttpRequests(authz -> authz
                         // === PUBLIC ===
                         .requestMatchers(HttpMethod.GET, "/api/menu").permitAll()
@@ -80,17 +79,13 @@ public class SecurityConfig {
                         // === DINER (KHÁCH HÀNG) ===
                         .requestMatchers("/api/orders/**").hasRole("DINER")
                         .requestMatchers("/api/reviews").hasRole("DINER")
-
-                        // --- THÊM LẠI DÒNG NÀY ---
-                        // (Tệp của bạn đang thiếu dòng này, gây ra lỗi 403)
-                        .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER")
-                        // --- KẾT THÚC THÊM LẠI ---
+                        .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER") // (Sửa lỗi 403 khi thanh toán)
 
                         // === KITCHEN (BẾP) ===
                         .requestMatchers("/api/kitchen/**").hasRole("KITCHEN")
 
-                        // === WEBSOCKET (CHO CẢ HAI VAI TRÒ ĐÃ ĐĂNG NHẬP) ===
-                        .requestMatchers("/ws/**").authenticated()
+                        // === WEBSOCKET ===
+                        .requestMatchers("/ws/**").authenticated() // (Giờ đã được phép nhờ .csrf(disable))
 
                         .anyRequest().authenticated()
                 )

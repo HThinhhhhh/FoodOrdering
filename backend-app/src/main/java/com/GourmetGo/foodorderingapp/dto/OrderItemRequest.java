@@ -11,4 +11,6 @@ public class OrderItemRequest {
 
     /** Số lượng */
     private int quantity;
+
+    private String note;
 }

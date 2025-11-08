@@ -2,7 +2,7 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
 
-// --- (Thêm một chút CSS để các nút đẹp hơn) ---
+// (CSS giữ nguyên)
 const buttonStyle = {
     marginLeft: '5px',
     marginRight: '5px',
@@ -10,16 +10,24 @@ const buttonStyle = {
     cursor: 'pointer',
     fontWeight: 'bold',
 };
+// --- THÊM CSS CHO GHI CHÚ ---
+const noteInputStyle = {
+    width: '90%',
+    marginTop: '5px',
+    fontSize: '0.9em',
+    padding: '3px',
+    border: '1px solid #ccc',
+    borderRadius: '3px'
+};
 
 export const Cart = () => {
-    // --- LẤY THÊM HÀM MỚI TỪ CONTEXT ---
-    const { cartItems, addToCart, removeFromCart } = useCart(); // Lấy thêm addToCart và removeFromCart
+    // --- LẤY HÀM MỚI ---
+    const { cartItems, addToCart, removeFromCart, updateItemNote } = useCart();
 
     if (cartItems.length === 0) {
         return <p>Giỏ hàng của bạn đang trống.</p>;
     }
 
-    // Tính tổng (giữ nguyên)
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     return (
@@ -29,8 +37,7 @@ export const Cart = () => {
                 {cartItems.map(item => (
                     <li key={item.id} style={{ marginBottom: '10px' }}>
                         {item.name}
-                        <br />
-                        {/* --- BẮT ĐẦU SỬA ĐỔI GIAO DIỆN --- */}
+                        {/* (Phần nút +/- và số lượng giữ nguyên) */}
                         <div>
                             <button
                                 style={buttonStyle}
@@ -49,7 +56,16 @@ export const Cart = () => {
                                 ${item.price * item.quantity}
                             </span>
                         </div>
-                        {/* --- KẾT THÚC SỬA ĐỔI GIAO DIỆN --- */}
+
+                        {/* --- THÊM Ô NHẬP GHI CHÚ --- */}
+                        <input
+                            type="text"
+                            placeholder="Ghi chú (ví dụ: không cay...)"
+                            value={item.note}
+                            onChange={(e) => updateItemNote(item.id, e.target.value)}
+                            style={noteInputStyle}
+                        />
+                        {/* --- KẾT THÚC THÊM GHI CHÚ --- */}
                     </li>
                 ))}
             </ul>

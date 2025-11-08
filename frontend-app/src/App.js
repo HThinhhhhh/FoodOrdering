@@ -1,5 +1,7 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+// --- 1. IMPORT <Outlet /> ---
+import { Routes, Route, Outlet } from 'react-router-dom';
+
 import { Menu } from './components/Menu';
 import { Cart } from './components/Cart';
 import { Checkout } from './components/Checkout';
@@ -10,45 +12,29 @@ import { DinerRoute } from './components/DinerRoute';
 import { KitchenRoute } from './components/KitchenRoute';
 import { LoginPage } from './components/LoginPage';
 import { KitchenLoginPage } from './components/KitchenLoginPage';
-import { CustomerHeader } from './components/CustomerHeader'; // (Tệp bạn đã tạo)
-import { KitchenHeader } from './components/KitchenHeader'; // (Tệp bạn đã tạo)
+import { CustomerHeader } from './components/CustomerHeader';
+import { KitchenHeader } from './components/KitchenHeader';
 
-// --- BỐ CỤC KHÁCH HÀNG (Giao diện A) ---
+// --- 2. SỬA LẠI BỐ CỤC KHÁCH HÀNG ---
+// Layout này sẽ render Header và một "lỗ hổng" (Outlet)
 const CustomerLayout = () => (
     <div>
         <CustomerHeader />
         <hr />
-        <Routes>
-            <Route path="/" element={<DinerPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-                path="/my-orders"
-                element={<DinerRoute><MyOrders /></DinerRoute>}
-            />
-            <Route
-                path="/order-status/:orderId"
-                element={<DinerRoute><OrderStatus /></DinerRoute>}
-            />
-        </Routes>
+        <Outlet /> {/* <-- Sử dụng Outlet thay vì <Routes> */}
     </div>
 );
 
-// --- BỐ CỤC BẾP (Giao diện B) ---
+// --- 3. SỬA LẠI BỐ CỤC BẾP ---
 const KitchenLayout = () => (
     <div>
         <KitchenHeader />
         <hr />
-        <Routes>
-            <Route path="/login" element={<KitchenLoginPage />} />
-            <Route
-                path="/"
-                element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
-            />
-        </Routes>
+        <Outlet /> {/* <-- Sử dụng Outlet thay vì <Routes> */}
     </div>
 );
 
-// Component DinerPage (giữ nguyên)
+// (Hàm DinerPage giữ nguyên)
 function DinerPage() {
     return (
         <div style={{ display: 'flex', gap: '20px', padding: '10px' }}>
@@ -63,15 +49,36 @@ function DinerPage() {
     );
 }
 
-// --- App.js SẼ QUYẾT ĐỊNH RENDER GIAO DIỆN NÀO ---
+// --- 4. CẤU HÌNH LẠI ROUTES CHÍNH ---
 function App() {
-    if (process.env.REACT_APP_MODE === 'KITCHEN') {
-        // Nếu là Cổng 3001, chỉ render Giao diện Bếp
-        return <KitchenLayout />;
-    }
+    return (
+        <Routes>
+            {/* Bố cục Khách hàng (Giao diện A) */}
+            <Route path="/*" element={<CustomerLayout />}>
+                {/* Các đường dẫn con của Khách hàng */}
+                <Route index element={<DinerPage />} /> {/* 'index' là path="/" */}
+                <Route path="login" element={<LoginPage />} />
+                <Route
+                    path="my-orders"
+                    element={<DinerRoute><MyOrders /></DinerRoute>}
+                />
+                <Route
+                    path="order-status/:orderId"
+                    element={<DinerRoute><OrderStatus /></DinerRoute>}
+                />
+            </Route>
 
-    // Mặc định (Cổng 3000), render Giao diện Khách hàng
-    return <CustomerLayout />;
+            {/* Bố cục Bếp (Giao diện B) */}
+            <Route path="/kitchen/*" element={<KitchenLayout />}>
+                {/* Các đường dẫn con của Bếp */}
+                <Route path="login" element={<KitchenLoginPage />} />
+                <Route
+                    path=""  // <-- Đường dẫn trống (khớp với "/kitchen")
+                    element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
+                />
+            </Route>
+        </Routes>
+    );
 }
 
 export default App;

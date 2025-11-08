@@ -35,4 +35,9 @@ public class OrderItem implements Serializable{
     /** Số lượng món này được đặt */
     @Column(nullable = false)
     private int quantity;
+
+    // --- THÊM TRƯỜNG MỚI ---
+    @Column(nullable = true) // Cho phép ghi chú là null (không bắt buộc)
+    private String note;
+    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
 }

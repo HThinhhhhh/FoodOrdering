@@ -2,21 +2,28 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 
-// --- 1. IMPORT TẤT CẢ CÁC PROVIDER CỦA BẠN ---
+// --- BẮT ĐẦU SỬA ĐỔI: THÊM AXIOS ---
+import axios from 'axios';
+// --- KẾT THÚC SỬA ĐỔI ---
+
 import { AuthProvider } from './context/AuthContext';
 import { MenuProvider } from './context/MenuContext';
 import { CartProvider } from './context/CartContext';
+import App from './App';
+
+// --- BẮT ĐẦU SỬA ĐỔI: CẤU HÌNH AXIOS ---
+// Buộc axios luôn gửi kèm cookie (phiên đăng nhập) cho các yêu cầu
+axios.defaults.withCredentials = true;
+// --- KẾT THÚC SỬA ĐỔI ---
 
 // (import './index.css';)
-import App from './App';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    // --- 2. BỌC TẤT CẢ CÁC PROVIDER QUANH APP ---
     <BrowserRouter>
-        <AuthProvider> {/* Cung cấp 'currentUser' */}
-            <MenuProvider> {/* Cung cấp 'getItemName' */}
-                <CartProvider> {/* Cung cấp 'cartItems', 'addToCart', v.v. */}
+        <AuthProvider>
+            <MenuProvider>
+                <CartProvider>
                     <App />
                 </CartProvider>
             </MenuProvider>

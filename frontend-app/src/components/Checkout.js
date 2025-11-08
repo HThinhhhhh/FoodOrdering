@@ -5,8 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-// --- 1. LẤY API URL TỪ BIẾN MÔI TRƯỜNG ---
-const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
+// Lấy API URL từ biến môi trường (http://localhost:8080)
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const Checkout = () => {
     const { cartItems, clearCart } = useCart();
@@ -14,7 +14,6 @@ export const Checkout = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { currentUser } = useAuth();
 
-    // (handleCheckout đã được cập nhật)
     const handleCheckout = async () => {
         if (cartItems.length === 0) {
             alert("Vui lòng thêm món vào giỏ hàng!");
@@ -29,23 +28,25 @@ export const Checkout = () => {
         setIsLoading(true);
 
         try {
-            // --- 2. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
             console.log("Đang giả lập thanh toán...");
             const paymentResponse = await axios.post(`${API_URL}/api/payments/mock`);
 
             if (paymentResponse.data.status === "SUCCESS") {
                 console.log("Thanh toán thành công:", paymentResponse.data.transaction_id);
 
+                // --- BẮT ĐẦU SỬA ĐỔI (THÊM "note") ---
+                // Gửi ghi chú (note) từ giỏ hàng
                 const orderRequest = {
                     items: cartItems.map(item => ({
                         menuItemId: item.id,
-                        quantity: item.quantity
+                        quantity: item.quantity,
+                        note: item.note // <-- THÊM DÒNG NÀY
                     })),
                     pickupWindow: new Date(Date.now() + 15 * 60000).toISOString()
                 };
+                // --- KẾT THÚC SỬA ĐỔI ---
 
                 console.log("Đang gửi đơn hàng:", orderRequest);
-                // --- 3. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
                 await axios.post(`${API_URL}/api/orders`, orderRequest);
                 console.log("Đơn hàng đã được tiếp nhận và đang đưa vào hàng đợi.");
 
@@ -58,7 +59,6 @@ export const Checkout = () => {
 
             }
         } catch (error) {
-            // (Log lỗi này bạn đang thấy)
             console.error("Lỗi khi thanh toán hoặc gửi đơn hàng:", error);
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                 alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");

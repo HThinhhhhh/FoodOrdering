@@ -12,7 +12,8 @@ export const KitchenLoginPage = () => {
 
     useEffect(() => {
         if (currentUser && currentUser.role === 'KITCHEN') {
-            navigate('/kitchen');
+            // --- SỬA ĐIỀU HƯỚNG ---
+            navigate('/kitchen'); // Điều hướng đến đường dẫn gốc của Bếp
         }
     }, [currentUser, navigate]);
 
@@ -21,8 +22,10 @@ export const KitchenLoginPage = () => {
         setError('');
         try {
             const user = await login(username, password);
+
             if (user.role === 'KITCHEN') {
-                navigate('/kitchen');
+                // --- SỬA ĐIỀU HƯỚNG ---
+                navigate('/kitchen'); // Điều hướng đến đường dẫn gốc của Bếp
             } else {
                 setError('Đây không phải tài khoản của nhân viên bếp.');
                 await logout();
@@ -33,10 +36,11 @@ export const KitchenLoginPage = () => {
     };
 
     return (
-        // (JSX cho form đăng nhập)
+        // (Phần JSX return giữ nguyên)
         <div style={{ padding: '20px' }}>
             <h2>Đăng nhập Màn hình Bếp (KDS)</h2>
             <form onSubmit={handleSubmit}>
+                {/* (Form giữ nguyên) */}
                 <div>
                     <label>Username: </label>
                     <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />

@@ -1,4 +1,4 @@
-package com.GourmetGo.foodorderingapp.config; // Đảm bảo package này đúng
+package com.GourmetGo.foodorderingapp.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -6,28 +6,24 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-
 @Configuration
 @EnableWebSocketMessageBroker
-
+// (Xóa @Profile("kitchen") nếu còn)
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // Dựa trên log của bạn, /topic/kitchen tồn tại
         config.enableSimpleBroker("/topic");
-
-        // Dựa trên code KDS, /app/kitchen/update-status tồn tại
         config.setApplicationDestinationPrefixes("/app");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // ---- ĐÂY LÀ SỬA ĐỔI QUAN TRỌNG ----
-        // Chúng ta thêm .setAllowedOrigins(...) để sửa lỗi CORS
-
-        registry.addEndpoint("/ws") // Endpoint mà SockJS kết nối
-                .setAllowedOrigins("http://localhost:3000") // <-- THÊM DÒNG NÀY
-                .withSockJS(); // Bật SockJS
+        // --- SỬA DÒNG NÀY ---
+        registry.addEndpoint("/ws")
+                // Thêm dòng này để cho phép Cổng 3000 và 3001 kết nối
+                .setAllowedOrigins("http://localhost:3000", "http://localhost:3001")
+                .withSockJS();
+        // --- KẾT THÚC SỬA ĐỔI ---
     }
 }
