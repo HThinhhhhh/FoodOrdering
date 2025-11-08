@@ -1,23 +1,24 @@
 package com.GourmetGo.foodorderingapp.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.Data;
+import java.math.BigDecimal; // <-- Thêm import
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class OrderRequest {
-
-    /** * ID của người dùng (Trong ứng dụng thực tế, ID này nên được lấy
-     * từ thông tin xác thực, không phải client gửi lên)
-     */
     private Long userId;
-
-    /** Danh sách các món hàng trong giỏ */
     private List<OrderItemRequest> items;
+    private LocalDateTime pickupWindow; // (Trường này có thể bị loại bỏ nếu chỉ giao hàng)
 
-    /** Khung giờ khách hàng muốn nhận món */
-    private LocalDateTime pickupWindow;
+    // --- THÊM CÁC TRƯỜNG MỚI (Goal 3, 4, 6) ---
+    private String deliveryAddress; // Địa chỉ đầy đủ (đã ghép)
+    private String shipperNote;
+    private String paymentMethod;
+
+    private BigDecimal subtotal;
+    private BigDecimal vatAmount;
+    private BigDecimal shippingFee;
+    private BigDecimal grandTotal;
+    // --- KẾT THÚC THÊM TRƯỜỜNG MỚI ---
 }

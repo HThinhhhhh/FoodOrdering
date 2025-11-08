@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { formatCurrency } from '../utils/formatCurrency';
 
-// LẤY API URL TỪ BIẾN MÔI TRƯỜNG
 const API_URL = process.env.REACT_APP_API_URL;
 
 export const MyOrders = () => {
@@ -14,7 +14,6 @@ export const MyOrders = () => {
         const fetchOrders = async () => {
             setLoading(true);
             try {
-                // (Logic fetch API giữ nguyên)
                 const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 setOrders(response.data);
             } catch (error) {
@@ -22,17 +21,40 @@ export const MyOrders = () => {
             }
             setLoading(false);
         };
-
         fetchOrders();
     }, []);
 
-    if (loading) {
-        return <p>Đang tải các đơn hàng của bạn...</p>;
-    }
+    // --- BẮT ĐẦU: LOGIC HIỂN THỊ NÚT ĐÁNH GIÁ (Goal 4, 5) ---
+    const renderActionLink = (order) => {
+        // Kiểm tra 3 ngày (3 * 24 * 60 * 60 * 1000 = 259200000ms)
+        const threeDaysAgo = Date.now() - 259200000;
+        const isRecent = new Date(order.orderTime).getTime() > threeDaysAgo;
 
-    if (orders.length === 0) {
-        return <p>Bạn chưa có đơn hàng nào.</p>;
-    }
+        // 1. Nếu đã hoàn thành VÀ chưa đánh giá VÀ trong 3 ngày
+        if (order.status === 'COMPLETED' && !order.isReviewed && isRecent) {
+            return (
+                <Link to={`/review/${order.id}`} style={{color: 'orange', fontWeight: 'bold'}}>
+                    Đánh giá
+                </Link>
+            );
+        }
+
+        // 2. Nếu đã đánh giá
+        if (order.isReviewed) {
+            return <span style={{color: 'gray'}}>Đã đánh giá</span>;
+        }
+
+        // 3. Nếu đơn hàng chưa xong (hoặc quá hạn 3 ngày)
+        return (
+            <Link to={`/order-status/${order.id}`}>
+                Bấm để xem
+            </Link>
+        );
+    };
+    // --- KẾT THÚC LOGIC ---
+
+    if (loading) { return <p>Đang tải các đơn hàng của bạn...</p>; }
+    if (orders.length === 0) { return <p>Bạn chưa có đơn hàng nào.</p>; }
 
     return (
         <div style={{ padding: '20px' }}>
@@ -52,13 +74,11 @@ export const MyOrders = () => {
                     <tr key={order.id} style={{ borderBottom: '1px solid #ccc' }}>
                         <td>#{order.id}</td>
                         <td>{order.status}</td>
-                        {/* Đảm bảo totalAmount tồn tại trước khi gọi toFixed */}
-                        <td>${order.totalAmount ? order.totalAmount.toFixed(2) : '0.00'}</td>
+                        <td>{formatCurrency(order.grandTotal)}</td>
                         <td>{new Date(order.orderTime).toLocaleString()}</td>
                         <td>
-                            <Link to={`/order-status/${order.id}`}>
-                                Bấm để xem
-                            </Link>
+                            {/* --- SỬA DÒNG NÀY --- */}
+                            {renderActionLink(order)}
                         </td>
                     </tr>
                 ))}

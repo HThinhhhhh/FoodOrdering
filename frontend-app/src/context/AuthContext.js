@@ -2,9 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// --- 1. SỬA LẠI CÁCH LẤY API URL ---
-// Giống như cách MenuContext.js làm, lấy URL từ biến môi trường
-const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
+const API_URL = process.env.REACT_APP_API_URL;
 
 const AuthContext = createContext();
 
@@ -15,7 +13,6 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // 2. Cập nhật hàm này để gọi URL đầy đủ
         axios.get(`${API_URL}/api/auth/me`)
             .then(response => {
                 setCurrentUser(response.data);
@@ -27,10 +24,10 @@ export const AuthProvider = ({ children }) => {
             });
     }, []);
 
-    const login = async (username, password) => {
+    // --- SỬA HÀM LOGIN ---
+    const login = async (phoneNumber, password) => {
         try {
-            // 3. Cập nhật hàm này để gọi URL đầy đủ
-            const response = await axios.post(`${API_URL}/api/auth/login`, { username, password });
+            const response = await axios.post(`${API_URL}/api/auth/login`, { phoneNumber, password });
             setCurrentUser(response.data);
             return response.data;
         } catch (error) {
@@ -38,15 +35,16 @@ export const AuthProvider = ({ children }) => {
             throw error;
         }
     };
+    // --- KẾT THÚC SỬA ---
 
-    const register = async (username, password) => {
-        // 4. Cập nhật hàm này để gọi URL đầy đủ
-        await axios.post(`${API_URL}/api/auth/register`, { username, password });
+    // --- SỬA HÀM REGISTER ---
+    const register = async (phoneNumber, password) => {
+        await axios.post(`${API_URL}/api/auth/register`, { phoneNumber, password });
     };
+    // --- KẾT THÚC SỬA ---
 
     const logout = async () => {
         try {
-            // 5. Cập nhật hàm này để gọi URL đầy đủ
             await axios.post(`${API_URL}/api/auth/logout`);
             setCurrentUser(null);
         } catch (error) {
@@ -54,12 +52,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // --- THÊM HÀM MỚI (Goal 3) ---
+    // Cho phép các component cập nhật state của user (ví dụ: sau khi thêm tên)
+    const updateUser = (updatedUser) => {
+        setCurrentUser(updatedUser);
+    };
+    // --- KẾT THÚC THÊM HÀM MỚI ---
+
     const value = {
         currentUser,
         loading,
         login,
         logout,
-        register
+        register,
+        updateUser // Thêm hàm này
     };
 
     return (

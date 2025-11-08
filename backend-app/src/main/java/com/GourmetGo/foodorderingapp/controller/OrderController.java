@@ -1,15 +1,17 @@
 package com.GourmetGo.foodorderingapp.controller;
 
 import com.GourmetGo.foodorderingapp.dto.OrderRequest;
+import com.GourmetGo.foodorderingapp.model.User;
 import com.GourmetGo.foodorderingapp.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 // --- THÊM CÁC IMPORT NÀY ---
-import com.GourmetGo.foodorderingapp.model.User;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.GourmetGo.foodorderingapp.model.OrderStatus;
+import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import java.util.List;
 import java.util.Map;
 // --- KẾT THÚC THÊM IMPORT ---
@@ -17,19 +19,32 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
+
     @Autowired
     private OrderService orderService;
+
+    // --- THÊM REPOSITORY ĐỂ KIỂM TRA ---
+    @Autowired
+    private OrderRepository orderRepository;
 
     @PostMapping
     public ResponseEntity<String> createOrder(
             @RequestBody OrderRequest orderRequest,
-            @AuthenticationPrincipal User user // 3. LẤY USER ĐÃ ĐĂNG NHẬP
+            @AuthenticationPrincipal User user
     ) {
-        try {
-            // 4. GÁN USER ID VÀO REQUEST
-            // (Không còn tin tưởng ID từ client gửi lên)
-            orderRequest.setUserId(user.getId());
+        // --- BẮT ĐẦU LOGIC KIỂM TRA MỚI ---
+        // Kiểm tra xem user có đơn hàng nào đang hoạt động (chưa COMPLETED) không
+        boolean hasActiveOrder = orderRepository.existsByUserIdAndStatusNot(user.getId(), OrderStatus.COMPLETED);
 
+        if (hasActiveOrder) {
+            // Trả về lỗi 409 Conflict (Xung đột)
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Bạn đã có một đơn hàng đang được xử lý. Vui lòng hoàn thành đơn hàng đó trước khi đặt đơn mới.");
+        }
+        // --- KẾT THÚC LOGIC KIỂM TRA MỚI ---
+
+        try {
+            orderRequest.setUserId(user.getId());
             orderService.submitOrder(orderRequest);
 
             return ResponseEntity.status(HttpStatus.ACCEPTED)
@@ -42,10 +57,9 @@ public class OrderController {
 
     @GetMapping("/my-orders")
     public ResponseEntity<List<Map<String, Object>>> getMyOrders(
-            @AuthenticationPrincipal User user // 5. LẤY USER ĐÃ ĐĂNG NHẬP
+            @AuthenticationPrincipal User user
     ) {
         try {
-            // 6. DÙNG USER ID THẬT
             List<Map<String, Object>> userOrders = orderService.getOrdersForUser(user.getId());
             return ResponseEntity.ok(userOrders);
         } catch (Exception e) {

@@ -11,30 +11,25 @@ import com.GourmetGo.foodorderingapp.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.simp.SimpMessagingTemplate; // (Đảm bảo đã import)
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap; // (Đảm bảo đã import)
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map; // (Đảm bảo đã import)
 import java.util.Set;
-// (Import java.util.concurrent.TimeUnit; không được sử dụng, có thể xóa)
+import java.util.stream.Collectors; // (Đảm bảo đã import)
 
 // Dùng cho log
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// --- Imports cho WebSocket & DTO ---
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.stream.Collectors;
-
-
 @Service
-// (Đã xóa @Profile("kitchen") để chạy trên một máy chủ duy nhất)
 public class OrderBatchProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(OrderBatchProcessor.class);
@@ -42,19 +37,14 @@ public class OrderBatchProcessor {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
-
     @Autowired
     private OrderRepository orderRepository;
-
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
     private MenuItemRepository menuItemRepository;
-
-    // --- Dependency cho WebSocket ---
     @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private SimpMessagingTemplate messagingTemplate; // (Đã có)
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -64,13 +54,12 @@ public class OrderBatchProcessor {
     }
 
     /**
-     * Chạy mỗi 5 giây để xử lý các đơn hàng trong hàng đợi Redis.
+     * Chạy mỗi 1 giây để xử lý các đơn hàng trong hàng đợi Redis.
      */
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 1000) // (Đã sửa thành 1 giây)
     @Transactional
     public void processOrderQueue() {
         log.info("Đang kiểm tra hàng đợi đơn hàng...");
-
         List<String> orderJsonList = redisTemplate.opsForList().range(ORDER_QUEUE_KEY, 0, -1);
 
         if (orderJsonList == null || orderJsonList.isEmpty()) {
@@ -79,44 +68,33 @@ public class OrderBatchProcessor {
         }
 
         log.info("Tìm thấy {} đơn hàng trong hàng đợi. Bắt đầu xử lý...", orderJsonList.size());
-
         List<Order> ordersToSave = new ArrayList<>();
 
         for (String orderJson : orderJsonList) {
             try {
                 OrderRequest request = objectMapper.readValue(orderJson, OrderRequest.class);
-                Order order = transformRequestToOrder(request);
+                Order order = transformRequestToOrder(request); // <-- Gọi hàm đã sửa
                 ordersToSave.add(order);
             } catch (Exception e) {
                 log.error("Lỗi xử lý đơn hàng JSON: {}. Lỗi: {}", orderJson, e.getMessage());
             }
         }
 
-        // 4. Lưu tất cả chúng vào CSDL PostgreSQL
         if (!ordersToSave.isEmpty()) {
-            // 4a. Lưu và lấy lại danh sách đã lưu (để có ID)
             List<Order> savedOrders = orderRepository.saveAll(ordersToSave);
             log.info("Đã lưu thành công {} đơn hàng vào CSDL.", savedOrders.size());
 
-            // 4b. Gửi thông báo real-time cho TỪNG đơn hàng
             for (Order savedOrder : savedOrders) {
-                // Chuyển đổi sang DTO (Map) an toàn
-                Map<String, Object> orderDto = convertOrderToDto(savedOrder);
-
-                // 4c. Gửi DTO đến kênh WebSocket
+                Map<String, Object> orderDto = convertOrderToDto(savedOrder); // <-- Gọi hàm đã sửa
                 log.info("Đang gửi đơn hàng DTO tới /topic/kitchen: {}", orderDto);
                 messagingTemplate.convertAndSend("/topic/kitchen", orderDto);
             }
         }
-
-        // 5. Xóa các mục đã xử lý khỏi hàng đợi
         redisTemplate.opsForList().trim(ORDER_QUEUE_KEY, orderJsonList.size(), -1);
     }
 
     /**
-     * Phương thức trợ giúp để chuyển đổi OrderRequest (DTO)
-     * thành một Order (Entity) sẵn sàng để lưu vào CSDL.
-     * (ĐÃ CẬP NHẬT ĐỂ NHẬN GHI CHÚ)
+     * Chuyển DTO (Request) thành Entity (Model)
      */
     private Order transformRequestToOrder(OrderRequest request) {
         User user = userRepository.findById(request.getUserId())
@@ -127,39 +105,37 @@ public class OrderBatchProcessor {
         order.setPickupWindow(request.getPickupWindow());
         order.setStatus(OrderStatus.RECEIVED);
 
-        Set<OrderItem> orderItems = new HashSet<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        // --- THÊM CÁC TRƯỜNG MỚI (Goal 3, 4, 6) ---
+        order.setDeliveryAddress(request.getDeliveryAddress());
+        order.setShipperNote(request.getShipperNote());
+        order.setPaymentMethod(request.getPaymentMethod());
+        order.setSubtotal(request.getSubtotal());
+        order.setVatAmount(request.getVatAmount());
+        order.setShippingFee(request.getShippingFee());
+        order.setGrandTotal(request.getGrandTotal());
+        // --- KẾT THÚC THÊM ---
 
+        Set<OrderItem> orderItems = new HashSet<>();
+        // (Vòng lặp for để xử lý items và note giữ nguyên)
         for (OrderItemRequest itemRequest : request.getItems()) {
             MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem ID: " + itemRequest.getMenuItemId()));
-
             OrderItem orderItem = new OrderItem();
             orderItem.setMenuItem(menuItem);
             orderItem.setQuantity(itemRequest.getQuantity());
             orderItem.setOrder(order);
-
-            // --- THÊM LOGIC GHI CHÚ (MỚI) ---
             if (itemRequest.getNote() != null && !itemRequest.getNote().isBlank()) {
                 orderItem.setNote(itemRequest.getNote());
             }
-            // --- KẾT THÚC THÊM LOGIC ---
-
             orderItems.add(orderItem);
-
-            BigDecimal itemCost = menuItem.getPrice().multiply(new BigDecimal(itemRequest.getQuantity()));
-            totalAmount = totalAmount.add(itemCost);
         }
 
         order.setItems(orderItems);
-        order.setTotalAmount(totalAmount);
-
         return order;
     }
 
     /**
-     * Chuyển đổi một Order (Entity) thành một DTO (Map) an toàn cho WebSocket.
-     * (ĐÃ CẬP NHẬT ĐỂ GỬI GHI CHÚ)
+     * Chuyển Entity (Model) thành DTO (Map) cho WebSocket
      */
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
@@ -168,17 +144,22 @@ public class OrderBatchProcessor {
         orderDto.put("pickupWindow", order.getPickupWindow());
         orderDto.put("userId", order.getUser().getId());
         orderDto.put("orderTime", order.getOrderTime());
-        orderDto.put("totalAmount", order.getTotalAmount());
+
+        // --- THÊM CÁC TRƯỜNG MỚI (Goal 2, 6) ---
+        orderDto.put("deliveryAddress", order.getDeliveryAddress());
+        orderDto.put("shipperNote", order.getShipperNote());
+        orderDto.put("paymentMethod", order.getPaymentMethod());
+        orderDto.put("subtotal", order.getSubtotal());
+        orderDto.put("vatAmount", order.getVatAmount());
+        orderDto.put("shippingFee", order.getShippingFee());
+        orderDto.put("grandTotal", order.getGrandTotal());
+        // --- KẾT THÚC THÊM ---
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuItemId", item.getMenuItem().getId());
             itemMap.put("quantity", item.getQuantity());
-
-            // --- THÊM LOGIC GHI CHÚ (MỚI) ---
-            itemMap.put("note", item.getNote()); // Sẽ là null nếu không có
-            // --- KẾT THÚC THÊM LOGIC ---
-
+            itemMap.put("note", item.getNote());
             return itemMap;
         }).collect(Collectors.toList());
 

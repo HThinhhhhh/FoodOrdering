@@ -1,10 +1,9 @@
 import React from 'react';
-// --- 1. IMPORT <Outlet /> ---
 import { Routes, Route, Outlet } from 'react-router-dom';
 
 import { Menu } from './components/Menu';
 import { Cart } from './components/Cart';
-import { Checkout } from './components/Checkout';
+import { Checkout } from './components/Checkout'; // (Tệp này sẽ là trang mới)
 import { OrderStatus } from './components/OrderStatus';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { MyOrders } from './components/MyOrders';
@@ -14,27 +13,27 @@ import { LoginPage } from './components/LoginPage';
 import { KitchenLoginPage } from './components/KitchenLoginPage';
 import { CustomerHeader } from './components/CustomerHeader';
 import { KitchenHeader } from './components/KitchenHeader';
+import { RegisterPage } from './components/RegisterPage'; // <-- 1. IMPORT MỚI
 
-// --- 2. SỬA LẠI BỐ CỤC KHÁCH HÀNG ---
-// Layout này sẽ render Header và một "lỗ hổng" (Outlet)
+// --- BỐ CỤC KHÁCH HÀNG (Giao diện A) ---
 const CustomerLayout = () => (
     <div>
         <CustomerHeader />
         <hr />
-        <Outlet /> {/* <-- Sử dụng Outlet thay vì <Routes> */}
+        <Outlet />
     </div>
 );
 
-// --- 3. SỬA LẠI BỐ CỤC BẾP ---
+// --- BỐ CỤC BẾP (Giao diện B) ---
 const KitchenLayout = () => (
     <div>
         <KitchenHeader />
         <hr />
-        <Outlet /> {/* <-- Sử dụng Outlet thay vì <Routes> */}
+        <Outlet />
     </div>
 );
 
-// (Hàm DinerPage giữ nguyên)
+// --- 2. SỬA LẠI DinerPage ---
 function DinerPage() {
     return (
         <div style={{ display: 'flex', gap: '20px', padding: '10px' }}>
@@ -43,21 +42,27 @@ function DinerPage() {
             </div>
             <div style={{ flex: 1 }}>
                 <Cart />
-                <Checkout />
+                {/* <Checkout /> đã bị xóa khỏi đây */}
             </div>
         </div>
     );
 }
 
-// --- 4. CẤU HÌNH LẠI ROUTES CHÍNH ---
 function App() {
     return (
         <Routes>
             {/* Bố cục Khách hàng (Giao diện A) */}
             <Route path="/*" element={<CustomerLayout />}>
-                {/* Các đường dẫn con của Khách hàng */}
-                <Route index element={<DinerPage />} /> {/* 'index' là path="/" */}
+                <Route index element={<DinerPage />} />
                 <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} /> {/* <-- 3. THÊM ROUTE MỚI */}
+
+                {/* 4. THÊM ROUTE CHO THANH TOÁN */}
+                <Route
+                    path="checkout"
+                    element={<DinerRoute><Checkout /></DinerRoute>}
+                />
+
                 <Route
                     path="my-orders"
                     element={<DinerRoute><MyOrders /></DinerRoute>}
@@ -70,10 +75,9 @@ function App() {
 
             {/* Bố cục Bếp (Giao diện B) */}
             <Route path="/kitchen/*" element={<KitchenLayout />}>
-                {/* Các đường dẫn con của Bếp */}
                 <Route path="login" element={<KitchenLoginPage />} />
                 <Route
-                    path=""  // <-- Đường dẫn trống (khớp với "/kitchen")
+                    path=""
                     element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
                 />
             </Route>

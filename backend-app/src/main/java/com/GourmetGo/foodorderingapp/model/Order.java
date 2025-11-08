@@ -2,7 +2,6 @@ package com.GourmetGo.foodorderingapp.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,47 +11,63 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.io.Serializable;
 
 @Entity
 @Table(name = "orders")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Order implements Serializable{
+public class Order {
 
-    private static final long serialVersionUID = 1L;
-
+    // ... (id, user, items, status, orderTime, pickupWindow giữ nguyên) ...
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Người dùng đã đặt đơn hàng này */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonBackReference("user-order")
     private User user;
 
-    /** Trạng thái hiện tại của đơn hàng (RECEIVED, PREPARING, READY) */
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("order-item")
+    private Set<OrderItem> items;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
 
-    /** Khung giờ hẹn lấy hàng (ví dụ: 12:30 PM - 12:45 PM) */
-    @Column(nullable = false)
-    private LocalDateTime pickupWindow; // Hoặc có thể dùng String nếu đơn giản
-
-    /** Thời điểm đơn hàng được tạo (do hệ thống gán) */
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
     private LocalDateTime orderTime;
 
-    /** Tổng số tiền của đơn hàng */
-    @Column(nullable = false)
-    private BigDecimal totalAmount;
+    private LocalDateTime pickupWindow;
 
-    /** Danh sách các món trong đơn hàng */
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("order-order-item")
-    private Set<OrderItem> items;
+    // ... (deliveryAddress, shipperNote, paymentMethod, chi phí giữ nguyên) ...
+    @Column(nullable = true)
+    private String deliveryAddress;
+    @Column(nullable = true)
+    private String shipperNote;
+    @Column(nullable = false)
+    private String paymentMethod;
+    @Column(nullable = false)
+    private BigDecimal subtotal;
+    @Column(nullable = false)
+    private BigDecimal vatAmount;
+    @Column(nullable = false)
+    private BigDecimal shippingFee;
+    @Column(nullable = false)
+    private BigDecimal grandTotal;
+
+    // --- BẮT ĐẦU THÊM TRƯỜNG ĐÁNH GIÁ (Goal 1, 4) ---
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isReviewed = false; // (Goal 4: Chỉ review 1 lần)
+
+    @Column(nullable = true)
+    private Integer deliveryRating; // (Goal 3: Rating 1-5)
+
+    @Column(nullable = true, length = 500)
+    private String deliveryComment; // (Goal 1: Đánh giá giao hàng)
+
+    // --- KẾT THÚC THÊM TRƯỜNG ĐÁNH GIÁ ---
 }

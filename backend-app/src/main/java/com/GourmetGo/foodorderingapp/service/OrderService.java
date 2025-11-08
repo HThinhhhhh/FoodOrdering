@@ -35,6 +35,7 @@ public class OrderService {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
+    // (submitOrder giữ nguyên)
     public void submitOrder(OrderRequest request) {
         try {
             String orderJsonString = objectMapper.writeValueAsString(request);
@@ -46,10 +47,10 @@ public class OrderService {
         }
     }
 
+    // (getOrdersForUser giữ nguyên)
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getOrdersForUser(Long userId) {
         List<Order> orders = orderRepository.findByUserIdOrderByOrderTimeDesc(userId);
-
         return orders.stream()
                 .map(this::convertOrderToDto)
                 .collect(Collectors.toList());
@@ -57,7 +58,6 @@ public class OrderService {
 
     /**
      * Chuyển đổi một Order (Entity) thành một DTO (Map) an toàn cho WebSocket/API.
-     * (ĐÃ CẬP NHẬT ĐỂ GỬI GHI CHÚ)
      */
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
@@ -66,17 +66,26 @@ public class OrderService {
         orderDto.put("pickupWindow", order.getPickupWindow());
         orderDto.put("userId", order.getUser().getId());
         orderDto.put("orderTime", order.getOrderTime());
-        orderDto.put("totalAmount", order.getTotalAmount());
+        orderDto.put("deliveryAddress", order.getDeliveryAddress());
+        orderDto.put("shipperNote", order.getShipperNote());
+        orderDto.put("paymentMethod", order.getPaymentMethod());
+        orderDto.put("subtotal", order.getSubtotal());
+        orderDto.put("vatAmount", order.getVatAmount());
+        orderDto.put("shippingFee", order.getShippingFee());
+        orderDto.put("grandTotal", order.getGrandTotal());
+
+        // --- THÊM CÁC TRƯỜNG ĐÁNH GIÁ (Goal 4, 5) ---
+        orderDto.put("isReviewed", order.isReviewed()); // (Tệp của bạn bị thiếu)
+        orderDto.put("orderTime", order.getOrderTime()); // (Tệp của bạn bị thiếu)
+        // --- KẾT THÚC THÊM ---
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuItemId", item.getMenuItem().getId());
             itemMap.put("quantity", item.getQuantity());
-
-            // --- THÊM DÒNG NÀY (BỊ THIẾU) ---
             itemMap.put("note", item.getNote());
-            // --- KẾT THÚC THÊM DÒNG NÀY ---
-
+            // (Thêm tên món ăn để trang Review hiển thị)
+            itemMap.put("name", item.getMenuItem().getName());
             return itemMap;
         }).collect(Collectors.toList());
 

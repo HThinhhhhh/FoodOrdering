@@ -1,29 +1,27 @@
 // src/components/OrderStatus.js
-import React, { useState, useEffect, useRef } from 'react'; // 1. IMPORT useRef
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import axios from 'axios';
 import { useMenu } from '../context/MenuContext';
+import { formatCurrency } from '../utils/formatCurrency'; // Import hàm format
 
-// (Cấu hình URL giữ nguyên)
 const API_URL = process.env.REACT_APP_API_URL;
 const BACKEND_WS_URL = `${API_URL}/ws`;
 
 export const OrderStatus = () => {
     const { orderId } = useParams();
     const { getItemName } = useMenu();
-
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // const [stompClient, setStompClient] = useState(null); // 2. XÓA DÒNG NÀY
-    const stompClientRef = useRef(null); // 3. THAY BẰNG useRef
+    const stompClientRef = useRef(null);
 
     useEffect(() => {
         const fetchCurrentOrder = async () => {
             setLoading(true);
             try {
+                // (Logic fetch API giữ nguyên)
                 const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 const allOrders = response.data;
                 const currentOrder = allOrders.find(o => o.id.toString() === orderId);
@@ -51,34 +49,30 @@ export const OrderStatus = () => {
                 const update = JSON.parse(message.body);
                 console.log("Nhận được cập nhật:", update);
 
-                // Cập nhật trạng thái trong đối tượng Order
                 setOrder(prevOrder => {
                     if (prevOrder) {
+                        // Cập nhật chỉ trạng thái khi có tin nhắn WS
                         return { ...prevOrder, status: update.newStatus };
                     }
-                    // (Nếu prevOrder là null, chỉ cần set status)
-                    return { status: update.newStatus };
+                    // (fetchCurrentOrder sẽ cập nhật phần còn lại)
+                    fetchCurrentOrder();
+                    return null;
                 });
             });
         };
 
         client.onStompError = (frame) => console.error("Lỗi STOMP:", frame);
         client.activate();
-
-        // 4. LƯU VÀO REF (Không gây re-render)
         stompClientRef.current = client;
-        // setStompClient(client); // <-- XÓA DÒNG NÀY
 
-        // 5. HÀM CLEANUP SỬ DỤNG REF
         return () => {
             if (stompClientRef.current) {
                 stompClientRef.current.deactivate();
                 console.log("Đã ngắt kết nối WebSocket.");
             }
         };
-    }, [orderId]); // Phụ thuộc vào orderId
+    }, [orderId]);
 
-    // (Phần JSX return giữ nguyên)
     if (loading) {
         return <p>Đang tải chi tiết đơn hàng...</p>;
     }
@@ -87,10 +81,23 @@ export const OrderStatus = () => {
         return <p>Không tìm thấy đơn hàng.</p>;
     }
 
+    // --- SỬA GIAO DIỆN (JSX) ---
     return (
         <div style={{ padding: '20px', maxWidth: '600px', margin: 'auto' }}>
             <h3>Mã đơn: #{order.id}</h3>
             <h2 style={{ color: '#3498db' }}>Trạng thái: {order.status}</h2>
+
+            {/* THÊM THÔNG TIN GIAO HÀNG (Goal 6) */}
+            {order.deliveryAddress && (
+                <div style={{ background: '#f4f4f4', padding: '10px', borderRadius: '5px', margin: '15px 0' }}>
+                    <strong>Giao đến:</strong> {order.deliveryAddress}
+                    {order.shipperNote && (
+                        <div style={{ fontStyle: 'italic', color: '#555', marginTop: '5px' }}>
+                            Ghi chú: {order.shipperNote}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <hr style={{ margin: '20px 0' }} />
 
@@ -112,9 +119,16 @@ export const OrderStatus = () => {
 
             <hr style={{ margin: '20px 0' }} />
 
-            <h3 style={{ textAlign: 'right' }}>
-                Tổng tiền: ${order.totalAmount ? order.totalAmount.toFixed(2) : '0.00'}
-            </h3>
+            {/* THÊM CHI TIẾT THANH TOÁN */}
+            <div style={{ textAlign: 'right', lineHeight: '1.6em' }}>
+                <div>Tạm tính: {formatCurrency(order.subtotal)}</div>
+                <div>VAT (15%): {formatCurrency(order.vatAmount)}</div>
+                <div>Phí vận chuyển: {formatCurrency(order.shippingFee)}</div>
+                <h3 style={{ marginTop: '10px' }}>
+                    Tổng tiền: {formatCurrency(order.grandTotal)}
+                </h3>
+                <div>(Thanh toán bằng: {order.paymentMethod})</div>
+            </div>
         </div>
     );
 };

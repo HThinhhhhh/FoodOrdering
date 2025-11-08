@@ -14,15 +14,11 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-
-// --- BẮT ĐẦU: THÊM IMPORT MỚI ---
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 import static org.springframework.security.config.Customizer.withDefaults;
-// --- KẾT THÚC: THÊM IMPORT MỚI ---
-
 
 @Configuration
 @EnableWebSecurity
@@ -38,8 +34,9 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + username));
+        // --- THAY ĐỔI: TÌM BẰNG SỐ ĐIỆN THOẠI ---
+        return phoneNumber -> userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + phoneNumber));
     }
 
     @Bean
@@ -47,30 +44,23 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    // --- BEAN MỚI: CẤU HÌNH CORS TOÀN CỤC ---
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001")); // Cho phép cả 2 cổng frontend
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
-        configuration.setAllowCredentials(true); // Cho phép gửi cookie (session)
+        configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-    // --- KẾT THÚC BEAN MỚI ---
-
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // --- THÊM CẤU HÌNH CORS VÀO ĐÂY ---
-                .cors(withDefaults()) // Kích hoạt CORS
-
-                // --- THÊM CẤU HÌNH VÔ HIỆU HÓA CSRF ---
-                .csrf(csrf -> csrf.disable()) // Tắt CSRF để cho phép /ws/info
-
+                .cors(withDefaults())
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
                         // === PUBLIC ===
                         .requestMatchers(HttpMethod.GET, "/api/menu").permitAll()
@@ -78,14 +68,20 @@ public class SecurityConfig {
 
                         // === DINER (KHÁCH HÀNG) ===
                         .requestMatchers("/api/orders/**").hasRole("DINER")
-                        .requestMatchers("/api/reviews").hasRole("DINER")
-                        .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER") // (Sửa lỗi 403 khi thanh toán)
+
+                        // --- SỬA ĐỔI DÒNG NÀY ---
+                        // .requestMatchers("/api/reviews").hasRole("DINER") // (Dòng cũ)
+                        .requestMatchers("/api/reviews/**").hasRole("DINER") // (Dòng mới: cho phép /api/reviews/order)
+                        // --- KẾT THÚC SỬA ĐỔI ---
+
+                        .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/me").hasRole("DINER")
 
                         // === KITCHEN (BẾP) ===
                         .requestMatchers("/api/kitchen/**").hasRole("KITCHEN")
 
                         // === WEBSOCKET ===
-                        .requestMatchers("/ws/**").authenticated() // (Giờ đã được phép nhờ .csrf(disable))
+                        .requestMatchers("/ws/**").authenticated()
 
                         .anyRequest().authenticated()
                 )

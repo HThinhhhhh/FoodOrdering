@@ -5,38 +5,38 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.io.Serializable;
 
 @Entity
 @Table(name = "reviews")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Review implements Serializable{
-
-    private static final long serialVersionUID = 1L;
+public class Review {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Món ăn được đánh giá */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "menu_item_id", nullable = false)
-    @JsonBackReference("menu-item-review")
+    @JsonBackReference("item-review")
     private MenuItem menuItem;
 
-    /** Người dùng viết đánh giá */
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonBackReference("user-review")
     private User user;
 
-    /** Điểm đánh giá (từ 1 đến 5 sao) */
     @Column(nullable = false)
-    private int rating;
+    private int rating; // (Goal 3: Rating 1-5)
 
-    /** Nội dung bình luận (có thể không có) */
-    @Column(length = 1000)
+    @Column(nullable = true, length = 500)
     private String comment;
+
+    // --- BẮT ĐẦU THÊM LIÊN KẾT VỚI ORDER ---
+    @ManyToOne
+    @JoinColumn(name = "order_id", nullable = false) // Mọi đánh giá món ăn phải thuộc 1 đơn hàng
+    @JsonBackReference("order-review")
+    private Order order;
+    // --- KẾT THÚC THÊM LIÊN KẾT ---
 }

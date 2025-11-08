@@ -2,19 +2,18 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/formatCurrency'; // <-- 1. IMPORT HÀM MỚI
 
-// --- 1. LẤY API URL TỪ BIẾN MÔI TRƯỜNG ---
-const API_URL = process.env.REACT_APP_API_URL; // Sẽ là http://localhost:8080
+const API_URL = process.env.REACT_APP_API_URL;
 
 export const Menu = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
-
     const [isVegetarian, setIsVegetarian] = useState(false);
     const [isSpicy, setIsSpicy] = useState(false);
-
     const { addToCart } = useCart();
 
+    // (useEffect và fetchMenu giữ nguyên)
     useEffect(() => {
         fetchMenu();
     }, [isVegetarian, isSpicy]);
@@ -26,8 +25,6 @@ export const Menu = () => {
                 "is_vegetarian": isVegetarian ? true : undefined,
                 "is_spicy": isSpicy ? true : undefined,
             };
-
-            // --- 2. SỬA LẠI LỆNH GỌI API (THÊM URL ĐẦY ĐỦ) ---
             const response = await axios.get(`${API_URL}/api/menu`, { params });
             setMenuItems(response.data);
         } catch (error) {
@@ -37,10 +34,9 @@ export const Menu = () => {
     };
 
     return (
-        // (Phần JSX return giữ nguyên)
         <div>
             <h3>Thực đơn</h3>
-            {/* Bộ lọc */}
+            {/* (Bộ lọc giữ nguyên) */}
             <div>
                 <label>
                     <input
@@ -65,7 +61,9 @@ export const Menu = () => {
                 <ul>
                     {menuItems.map(item => (
                         <li key={item.id}>
-                            <strong>{item.name}</strong> - ${item.price}
+                            {/* --- 2. SỬA ĐỊNH DẠNG TIỀN --- */}
+                            <strong>{item.name}</strong> - {formatCurrency(item.price)}
+                            {/* --- KẾT THÚC SỬA --- */}
                             <p>{item.description}</p>
                             <button onClick={() => addToCart(item)}>Thêm vào giỏ</button>
                         </li>

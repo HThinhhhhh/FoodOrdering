@@ -14,7 +14,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder; // Giữ import này
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -26,21 +25,18 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    // (Chúng ta không cần PasswordEncoder để đăng ký nữa, nhưng vẫn giữ để đăng nhập)
-    // @Autowired
-    // private PasswordEncoder passwordEncoder;
-
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody Map<String, String> loginRequest, HttpServletRequest request) {
-        String username = loginRequest.get("username");
+        // --- THAY ĐỔI: username -> phoneNumber ---
+        String phoneNumber = loginRequest.get("phoneNumber");
         String password = loginRequest.get("password");
 
         try {
             UsernamePasswordAuthenticationToken token =
-                    new UsernamePasswordAuthenticationToken(username, password);
+                    new UsernamePasswordAuthenticationToken(phoneNumber, password);
             Authentication authentication = authenticationManager.authenticate(token);
 
             SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -59,20 +55,18 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> registerUser(@RequestBody Map<String, String> registerRequest) {
-        String username = registerRequest.get("username");
+        // --- THAY ĐỔI: username -> phoneNumber (Goal 1) ---
+        String phoneNumber = registerRequest.get("phoneNumber");
         String password = registerRequest.get("password");
 
-        if (userRepository.findByUsername(username).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username đã tồn tại");
+        if (userRepository.findByPhoneNumber(phoneNumber).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Số điện thoại đã tồn tại");
         }
         User user = new User();
-        user.setUsername(username);
-
-        // --- THAY ĐỔI QUAN TRỌNG: LƯU MẬT KHẨU THUẦN ---
-        user.setPassword(password); // Không .encode()
-        // --- KẾT THÚC THAY ĐỔI ---
-
+        user.setPhoneNumber(phoneNumber); // Đặt SĐT
+        user.setPassword(password); // (Vì chúng ta đang dùng NoOpPasswordEncoder)
         user.setRole(Role.DINER);
+        // 'name' và địa chỉ sẽ là null cho đến khi họ đặt hàng
         userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body("Đăng ký thành công");
     }
