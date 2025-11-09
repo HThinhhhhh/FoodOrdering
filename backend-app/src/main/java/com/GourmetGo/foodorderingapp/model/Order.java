@@ -57,17 +57,13 @@ public class Order {
     private BigDecimal shippingFee;
     @Column(nullable = false)
     private BigDecimal grandTotal;
-
-    // --- BẮT ĐẦU THÊM TRƯỜNG ĐÁNH GIÁ (Goal 1, 4) ---
-
     @Column(nullable = false, columnDefinition = "boolean default false")
-    private boolean isReviewed = false; // (Goal 4: Chỉ review 1 lần)
-
+    private boolean isReviewed = false;
     @Column(nullable = true)
-    private Integer deliveryRating; // (Goal 3: Rating 1-5)
+    private Integer deliveryRating;
+    @Column(nullable = true, length = 500)
+    private String deliveryComment;
 
     @Column(nullable = true, length = 500)
-    private String deliveryComment; // (Goal 1: Đánh giá giao hàng)
-
-    // --- KẾT THÚC THÊM TRƯỜNG ĐÁNH GIÁ ---
+    private String cancellationReason; // Lý do hủy đơn
 }

@@ -57,6 +57,7 @@ export const OrderReviewPage = () => {
                     // Khởi tạo state cho đánh giá món ăn
                     const initialReviews = {};
                     currentOrder.items.forEach(item => {
+                        // Dùng menuItemId làm key
                         initialReviews[item.menuItemId] = { rating: 5, comment: '' };
                     });
                     setItemReviews(initialReviews);
@@ -136,7 +137,8 @@ export const OrderReviewPage = () => {
                 <h4>Đánh giá các món ăn trong đơn hàng:</h4>
                 {order.items.map(item => (
                     <div key={item.menuItemId} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginBottom: '15px' }}>
-                        <strong>{getItemName(item.menuItemId)}</strong>
+                        {/* Tên món ăn được lấy từ DTO (đã sửa ở backend) */}
+                        <strong>{item.name || getItemName(item.menuItemId)}</strong>
                         <StarRating
                             rating={itemReviews[item.menuItemId]?.rating || 0}
                             setRating={(rating) => handleItemReviewChange(item.menuItemId, 'rating', rating)}

@@ -1,8 +1,5 @@
 package com.GourmetGo.foodorderingapp.model;
 
-/**
- * Các trạng thái của một đơn hàng trong quy trình.
- */
 public enum OrderStatus {
     /**
      * Đã nhận đơn, chờ bếp xác nhận.
@@ -22,5 +19,10 @@ public enum OrderStatus {
     /**
      * Khách đã lấy hàng (hoàn thành)
      */
-    COMPLETED // <-- THÊM DÒNG NÀY
+    COMPLETED,
+
+    /**
+     * Đơn hàng đã bị hủy (bởi bếp)
+     */
+    CANCELLED
 }

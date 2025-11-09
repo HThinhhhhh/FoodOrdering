@@ -79,6 +79,7 @@ public class SecurityConfig {
 
                         // === KITCHEN (BẾP) ===
                         .requestMatchers("/api/kitchen/**").hasRole("KITCHEN")
+                        .requestMatchers(HttpMethod.POST, "/api/kitchen/cancel-order").hasRole("KITCHEN")
 
                         // === WEBSOCKET ===
                         .requestMatchers("/ws/**").authenticated()

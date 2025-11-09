@@ -21,7 +21,6 @@ export const Cart = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // --- THÊM STATE ĐỂ KIỂM TRA ĐƠN HÀNG HOẠT ĐỘNG ---
     const [hasActiveOrder, setHasActiveOrder] = useState(false);
     const [isLoadingOrders, setIsLoadingOrders] = useState(true);
 
@@ -37,8 +36,17 @@ export const Cart = () => {
             try {
                 const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 const orders = response.data;
-                const active = orders.some(order => order.status !== 'COMPLETED');
+
+                // --- SỬA LOGIC LỌC (Bug 1) ---
+                // Đơn hàng đang hoạt động là RECEIVED, PREPARING, hoặc READY
+                const active = orders.some(order =>
+                    order.status === 'RECEIVED' ||
+                    order.status === 'PREPARING' ||
+                    order.status === 'READY'
+                );
                 setHasActiveOrder(active);
+                // --- KẾT THÚC SỬA ---
+
             } catch (error) {
                 console.error("Lỗi khi kiểm tra đơn hàng đang hoạt động:", error);
                 setHasActiveOrder(false);
@@ -48,12 +56,11 @@ export const Cart = () => {
 
         checkActiveOrders();
     }, [currentUser]);
-    // --- KẾT THÚC LOGIC KIỂM TRA ---
 
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    // (renderCheckoutButton giữ nguyên)
     const renderCheckoutButton = () => {
-        // --- CẬP NHẬT LOGIC VÔ HIỆU HÓA ---
         const isDisabled = cartItems.length === 0 || !currentUser || hasActiveOrder || isLoadingOrders;
 
         let title = "Đến trang Thanh toán";
@@ -119,7 +126,6 @@ export const Cart = () => {
                                     {formatCurrency(item.price * item.quantity)}
                                 </span>
                             </div>
-                            {/* XÓA Ô INPUT GHI CHÚ */}
                         </li>
                     ))}
                 </ul>

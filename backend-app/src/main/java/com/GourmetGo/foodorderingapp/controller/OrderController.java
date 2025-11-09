@@ -9,12 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-// --- THÊM CÁC IMPORT NÀY ---
 import com.GourmetGo.foodorderingapp.model.OrderStatus;
 import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import java.util.List;
 import java.util.Map;
-// --- KẾT THÚC THÊM IMPORT ---
 
 @RestController
 @RequestMapping("/api/orders")
@@ -23,25 +21,28 @@ public class OrderController {
     @Autowired
     private OrderService orderService;
 
-    // --- THÊM REPOSITORY ĐỂ KIỂM TRA ---
     @Autowired
-    private OrderRepository orderRepository;
+    private OrderRepository orderRepository; // (Giữ nguyên)
 
     @PostMapping
     public ResponseEntity<String> createOrder(
             @RequestBody OrderRequest orderRequest,
             @AuthenticationPrincipal User user
     ) {
-        // --- BẮT ĐẦU LOGIC KIỂM TRA MỚI ---
-        // Kiểm tra xem user có đơn hàng nào đang hoạt động (chưa COMPLETED) không
-        boolean hasActiveOrder = orderRepository.existsByUserIdAndStatusNot(user.getId(), OrderStatus.COMPLETED);
+        // --- SỬA LOGIC KIỂM TRA (Bug 1) ---
+        // Chỉ chặn nếu đơn hàng đang ở 3 trạng thái này
+        List<OrderStatus> activeStatuses = List.of(
+                OrderStatus.RECEIVED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY
+        );
+        boolean hasActiveOrder = orderRepository.existsByUserIdAndStatusIn(user.getId(), activeStatuses);
 
         if (hasActiveOrder) {
-            // Trả về lỗi 409 Conflict (Xung đột)
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Bạn đã có một đơn hàng đang được xử lý. Vui lòng hoàn thành đơn hàng đó trước khi đặt đơn mới.");
+                    .body("Bạn đã có một đơn hàng đang được xử lý (Đã nhận, Đang chuẩn bị, hoặc Sẵn sàng).");
         }
-        // --- KẾT THÚC LOGIC KIỂM TRA MỚI ---
+        // --- KẾT THÚC SỬA ---
 
         try {
             orderRequest.setUserId(user.getId());
@@ -55,6 +56,7 @@ public class OrderController {
         }
     }
 
+    // (getMyOrders() giữ nguyên)
     @GetMapping("/my-orders")
     public ResponseEntity<List<Map<String, Object>>> getMyOrders(
             @AuthenticationPrincipal User user

@@ -24,35 +24,6 @@ export const MyOrders = () => {
         fetchOrders();
     }, []);
 
-    // --- BẮT ĐẦU: LOGIC HIỂN THỊ NÚT ĐÁNH GIÁ (Goal 4, 5) ---
-    const renderActionLink = (order) => {
-        // Kiểm tra 3 ngày (3 * 24 * 60 * 60 * 1000 = 259200000ms)
-        const threeDaysAgo = Date.now() - 259200000;
-        const isRecent = new Date(order.orderTime).getTime() > threeDaysAgo;
-
-        // 1. Nếu đã hoàn thành VÀ chưa đánh giá VÀ trong 3 ngày
-        if (order.status === 'COMPLETED' && !order.isReviewed && isRecent) {
-            return (
-                <Link to={`/review/${order.id}`} style={{color: 'orange', fontWeight: 'bold'}}>
-                    Đánh giá
-                </Link>
-            );
-        }
-
-        // 2. Nếu đã đánh giá
-        if (order.isReviewed) {
-            return <span style={{color: 'gray'}}>Đã đánh giá</span>;
-        }
-
-        // 3. Nếu đơn hàng chưa xong (hoặc quá hạn 3 ngày)
-        return (
-            <Link to={`/order-status/${order.id}`}>
-                Bấm để xem
-            </Link>
-        );
-    };
-    // --- KẾT THÚC LOGIC ---
-
     if (loading) { return <p>Đang tải các đơn hàng của bạn...</p>; }
     if (orders.length === 0) { return <p>Bạn chưa có đơn hàng nào.</p>; }
 
@@ -66,22 +37,50 @@ export const MyOrders = () => {
                     <th style={{ textAlign: 'left' }}>Trạng thái</th>
                     <th style={{ textAlign: 'left' }}>Tổng tiền</th>
                     <th style={{ textAlign: 'left' }}>Thời gian đặt</th>
-                    <th style={{ textAlign: 'left' }}>Chi tiết</th>
+                    <th style={{ textAlign: 'left' }}>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
-                {orders.map(order => (
-                    <tr key={order.id} style={{ borderBottom: '1px solid #ccc' }}>
-                        <td>#{order.id}</td>
-                        <td>{order.status}</td>
-                        <td>{formatCurrency(order.grandTotal)}</td>
-                        <td>{new Date(order.orderTime).toLocaleString()}</td>
-                        <td>
-                            {/* --- SỬA DÒNG NÀY --- */}
-                            {renderActionLink(order)}
-                        </td>
-                    </tr>
-                ))}
+                {orders.map(order => {
+                    // --- BẮT ĐẦU: LOGIC KIỂM TRA ĐÁNH GIÁ (Goal 4, 5) ---
+                    // (3 * 24 * 60 * 60 * 1000 = 259200000ms)
+                    const threeDaysAgo = Date.now() - 259200000;
+                    const isRecent = new Date(order.orderTime).getTime() > threeDaysAgo;
+
+                    // Điều kiện để hiển thị nút Đánh giá
+                    const canReview = order.status === 'COMPLETED' && !order.isReviewed && isRecent;
+                    // --- KẾT THÚC LOGIC ---
+
+                    return (
+                        <tr key={order.id} style={{ borderBottom: '1px solid #ccc' }}>
+                            <td>#{order.id}</td>
+                            <td>{order.status}</td>
+                            <td>{formatCurrency(order.grandTotal)}</td>
+                            <td>{new Date(order.orderTime).toLocaleString()}</td>
+                            <td>
+                                {/* 1. Link "Bấm để xem" (Luôn luôn có) */}
+                                <Link to={`/order-status/${order.id}`}>
+                                    Bấm để xem
+                                </Link>
+
+                                {/* 2. Link "Đánh giá" (Chỉ hiện khi đủ điều kiện) */}
+                                {canReview && (
+                                    <Link
+                                        to={`/review/${order.id}`}
+                                        style={{marginLeft: '10px', color: 'orange', fontWeight: 'bold', textDecoration: 'underline'}}
+                                    >
+                                        (Đánh giá)
+                                    </Link>
+                                )}
+
+                                {/* 3. Text "Đã đánh giá" */}
+                                {order.isReviewed && (
+                                    <span style={{marginLeft: '10px', color: 'gray'}}>(Đã đánh giá)</span>
+                                )}
+                            </td>
+                        </tr>
+                    );
+                })}
                 </tbody>
             </table>
         </div>

@@ -13,5 +13,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByUserId(Long userId);
     List<Order> findByStatusNot(OrderStatus status); // (Phương thức này bạn đã thêm ở bước KDS)
     List<Order> findByUserIdOrderByOrderTimeDesc(Long userId);
-    boolean existsByUserIdAndStatusNot(Long userId, OrderStatus status);
+    boolean existsByUserIdAndStatusIn(Long userId, List<OrderStatus> statuses);
 }

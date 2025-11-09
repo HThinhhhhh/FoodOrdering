@@ -73,18 +73,16 @@ public class OrderService {
         orderDto.put("vatAmount", order.getVatAmount());
         orderDto.put("shippingFee", order.getShippingFee());
         orderDto.put("grandTotal", order.getGrandTotal());
+        orderDto.put("isReviewed", order.isReviewed());
+        orderDto.put("orderTime", order.getOrderTime());
 
-        // --- THÊM CÁC TRƯỜNG ĐÁNH GIÁ (Goal 4, 5) ---
-        orderDto.put("isReviewed", order.isReviewed()); // (Tệp của bạn bị thiếu)
-        orderDto.put("orderTime", order.getOrderTime()); // (Tệp của bạn bị thiếu)
-        // --- KẾT THÚC THÊM ---
+        orderDto.put("cancellationReason", order.getCancellationReason());
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuItemId", item.getMenuItem().getId());
             itemMap.put("quantity", item.getQuantity());
             itemMap.put("note", item.getNote());
-            // (Thêm tên món ăn để trang Review hiển thị)
             itemMap.put("name", item.getMenuItem().getName());
             return itemMap;
         }).collect(Collectors.toList());
