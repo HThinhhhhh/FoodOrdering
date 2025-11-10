@@ -9,9 +9,19 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByStatus(OrderStatus status);
-    List<Order> findByUserId(Long userId);
-    List<Order> findByStatusNot(OrderStatus status); // (Phương thức này bạn đã thêm ở bước KDS)
+
+    // (Các phương thức cũ giữ nguyên)
     List<Order> findByUserIdOrderByOrderTimeDesc(Long userId);
+    List<Order> findByStatusNot(OrderStatus status);
+
+    // (Phương thức này không còn dùng nữa, nhưng có thể giữ lại)
     boolean existsByUserIdAndStatusIn(Long userId, List<OrderStatus> statuses);
+
+    // --- THÊM PHƯƠNG THỨC NÀY ---
+    /**
+     * Đếm số lượng đơn hàng của một người dùng đang ở
+     * MỘT TRONG các trạng thái được cung cấp.
+     */
+    int countByUserIdAndStatusIn(Long userId, List<OrderStatus> statuses);
+    // --- KẾT THÚC THÊM ---
 }

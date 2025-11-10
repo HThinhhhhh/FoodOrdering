@@ -22,25 +22,27 @@ public class OrderController {
     private OrderService orderService;
 
     @Autowired
-    private OrderRepository orderRepository; // (Giữ nguyên)
+    private OrderRepository orderRepository;
 
     @PostMapping
     public ResponseEntity<String> createOrder(
             @RequestBody OrderRequest orderRequest,
             @AuthenticationPrincipal User user
     ) {
-        // --- SỬA LOGIC KIỂM TRA (Bug 1) ---
-        // Chỉ chặn nếu đơn hàng đang ở 3 trạng thái này
+        // --- SỬA LOGIC KIỂM TRA (Từ 1 lên 3) ---
         List<OrderStatus> activeStatuses = List.of(
                 OrderStatus.RECEIVED,
                 OrderStatus.PREPARING,
                 OrderStatus.READY
         );
-        boolean hasActiveOrder = orderRepository.existsByUserIdAndStatusIn(user.getId(), activeStatuses);
 
-        if (hasActiveOrder) {
+        // 1. Đổi từ 'existsBy...' sang 'countBy...'
+        int activeOrderCount = orderRepository.countByUserIdAndStatusIn(user.getId(), activeStatuses);
+
+        // 2. Kiểm tra nếu >= 3
+        if (activeOrderCount >= 3) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body("Bạn đã có một đơn hàng đang được xử lý (Đã nhận, Đang chuẩn bị, hoặc Sẵn sàng).");
+                    .body("Bạn đã đạt giới hạn 3 đơn hàng đang hoạt động. Vui lòng hoàn thành các đơn hàng cũ trước khi đặt đơn mới.");
         }
         // --- KẾT THÚC SỬA ---
 
