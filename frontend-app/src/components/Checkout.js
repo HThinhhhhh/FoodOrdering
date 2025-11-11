@@ -235,6 +235,8 @@ export const Checkout = () => {
             if (error.response && (error.response.status === 401 || error.response.status === 403)) {
                 alert("Phiên đăng nhập hết hạn.");
                 navigate('/login');
+            } else if (error.response && error.response.status === 409) { // (Xử lý lỗi 3 đơn hàng)
+                alert(error.response.data);
             } else {
                 alert("Đã xảy ra lỗi: " + error.message);
             }

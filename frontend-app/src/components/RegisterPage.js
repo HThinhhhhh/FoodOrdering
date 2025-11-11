@@ -8,7 +8,7 @@ export const RegisterPage = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const { register } = useAuth();
+    const { register } = useAuth(); // Dùng hàm register từ AuthContext
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -23,7 +23,7 @@ export const RegisterPage = () => {
         try {
             await register(phoneNumber, password);
             alert('Đăng ký thành công! Vui lòng đăng nhập.');
-            navigate('/login'); // Goal 2: Bắt đăng nhập lại
+            navigate('/login'); // Yêu cầu 2: Bắt đăng nhập lại
         } catch (err) {
             if (err.response && err.response.status === 409) {
                 setError('Số điện thoại này đã tồn tại.');

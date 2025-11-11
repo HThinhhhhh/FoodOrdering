@@ -19,15 +19,16 @@ import java.util.Set;
 @NoArgsConstructor
 public class Order {
 
-    // ... (id, user, items, status, orderTime, pickupWindow giữ nguyên) ...
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // --- THAY ĐỔI LIÊN KẾT ---
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonBackReference("user-order")
-    private User user;
+    @JoinColumn(name = "customer_id", nullable = false) // Đổi từ user_id
+    @JsonBackReference("customer-order") // Đổi từ user-order
+    private Customer customer; // Đổi từ User
+    // --- KẾT THÚC THAY ĐỔI ---
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("order-item")
@@ -42,7 +43,6 @@ public class Order {
 
     private LocalDateTime pickupWindow;
 
-    // ... (deliveryAddress, shipperNote, paymentMethod, chi phí giữ nguyên) ...
     @Column(nullable = true)
     private String deliveryAddress;
     @Column(nullable = true)
@@ -63,7 +63,6 @@ public class Order {
     private Integer deliveryRating;
     @Column(nullable = true, length = 500)
     private String deliveryComment;
-
     @Column(nullable = true, length = 500)
-    private String cancellationReason; // Lý do hủy đơn
+    private String cancellationReason;
 }

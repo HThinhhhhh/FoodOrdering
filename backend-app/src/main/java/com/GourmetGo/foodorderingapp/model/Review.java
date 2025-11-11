@@ -22,21 +22,21 @@ public class Review {
     @JsonBackReference("item-review")
     private MenuItem menuItem;
 
+    // --- THAY ĐỔI LIÊN KẾT ---
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonBackReference("user-review")
-    private User user;
+    @JoinColumn(name = "customer_id", nullable = false) // Đổi từ user_id
+    @JsonBackReference("customer-review") // Đổi từ user-review
+    private Customer customer; // Đổi từ User
+    // --- KẾT THÚC THAY ĐỔI ---
 
     @Column(nullable = false)
-    private int rating; // (Goal 3: Rating 1-5)
+    private int rating;
 
     @Column(nullable = true, length = 500)
     private String comment;
 
-    // --- BẮT ĐẦU THÊM LIÊN KẾT VỚI ORDER ---
     @ManyToOne
-    @JoinColumn(name = "order_id", nullable = false) // Mọi đánh giá món ăn phải thuộc 1 đơn hàng
+    @JoinColumn(name = "order_id", nullable = false)
     @JsonBackReference("order-review")
     private Order order;
-    // --- KẾT THÚC THÊM LIÊN KẾT ---
 }

@@ -1,7 +1,7 @@
 package com.GourmetGo.foodorderingapp.controller;
 
-import com.GourmetGo.foodorderingapp.model.User;
-import com.GourmetGo.foodorderingapp.repository.UserRepository;
+import com.GourmetGo.foodorderingapp.model.Customer; // <-- 1. Sửa: User -> Customer
+import com.GourmetGo.foodorderingapp.repository.CustomerRepository; // <-- 2. Sửa: UserRepository -> CustomerRepository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,29 +10,27 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/api/users") // (Giữ nguyên URL /api/users)
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private CustomerRepository customerRepository; // <-- 3. Sửa: UserRepository -> CustomerRepository
 
     /**
      * Cho phép người dùng cập nhật thông tin cá nhân (Tên, Địa chỉ)
-     * Được gọi trong lần thanh toán đầu tiên.
      */
     @PutMapping("/me")
-    public ResponseEntity<User> updateUserProfile(
-            @AuthenticationPrincipal User user,
-            @RequestBody Map<String, String> updates) {
+    public ResponseEntity<Customer> updateUserProfile( // <-- 4. Sửa: User -> Customer
+                                                       @AuthenticationPrincipal Customer customer, // <-- 5. Sửa: User -> Customer
+                                                       @RequestBody Map<String, String> updates) {
 
-        // (Goal 3 & 5)
-        user.setName(updates.get("name"));
-        user.setApartmentNumber(updates.get("apartmentNumber"));
-        user.setStreetAddress(updates.get("streetAddress"));
-        user.setWard(updates.get("ward"));
-        user.setCity(updates.get("city"));
+        customer.setName(updates.get("name"));
+        customer.setApartmentNumber(updates.get("apartmentNumber"));
+        customer.setStreetAddress(updates.get("streetAddress"));
+        customer.setWard(updates.get("ward"));
+        customer.setCity(updates.get("city"));
 
-        User updatedUser = userRepository.save(user);
-        return ResponseEntity.ok(updatedUser);
+        Customer updatedCustomer = customerRepository.save(customer);
+        return ResponseEntity.ok(updatedCustomer);
     }
 }

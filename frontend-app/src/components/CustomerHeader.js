@@ -28,7 +28,7 @@ const buttonStyle = {
 };
 
 export const CustomerHeader = () => {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, logout } = useAuth(); // Dùng hàm logout chung
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -51,6 +51,7 @@ export const CustomerHeader = () => {
                 <>
                     <Link to="/" style={linkStyle}>Thực đơn</Link>
                     <Link to="/login" style={linkStyle}>Đăng nhập</Link>
+                    <Link to="/register" style={linkStyle}>Đăng ký</Link>
                 </>
             );
         }

@@ -1,16 +1,10 @@
 package com.GourmetGo.foodorderingapp.model;
 
 /**
- * Định nghĩa vai trò của người dùng trong hệ thống.
+ * Vai trò của Nhân viên (Employee)
+ * (Vai trò DINER được gán cứng cho Customer)
  */
 public enum Role {
-    /**
-     * Người dùng đặt đồ ăn (thực khách).
-     */
-    DINER,
-
-    /**
-     * Nhân viên bếp (quản lý đơn hàng).
-     */
-    KITCHEN
+    KITCHEN, // Nhân viên bếp
+    ADMIN    // Quản trị viên
 }

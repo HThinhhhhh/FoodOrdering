@@ -6,21 +6,21 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.io.Serializable;
 
 @Entity
-@Table(name = "app_user")
+@Table(name = "customers")
 @Getter
 @Setter
 @NoArgsConstructor
-public class User implements Serializable, UserDetails {
+public class Customer implements Serializable, UserDetails {
 
     private static final long serialVersionUID = 1L;
 
@@ -28,49 +28,52 @@ public class User implements Serializable, UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- THAY ĐỔI 1: USERNAME -> PHONENUMBER ---
+    // (Các trường: phoneNumber, name, apartmentNumber, streetAddress, ward, city giữ nguyên)
     @Column(nullable = false, unique = true)
-    private String phoneNumber; // Thay thế cho username
-
-    @Column(nullable = true) // Tên có thể null cho đến lần đặt hàng đầu tiên
+    private String phoneNumber;
+    @Column(nullable = true)
     private String name;
-
-    // Thêm các trường địa chỉ (Goal 3)
     @Column(nullable = true)
     private String apartmentNumber;
-
     @Column(nullable = true)
     private String streetAddress;
-
     @Column(nullable = true)
     private String ward;
-
     @Column(nullable = true)
     private String city;
-    // --- KẾT THÚC THAY ĐỔI 1 ---
 
     @Column(nullable = false, length = 60)
-    @JsonIgnore // Không bao giờ gửi mật khẩu ra frontend
+    @JsonIgnore
     private String password;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private Role role;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("user-order")
+    // (Các liên kết @OneToMany orders, reviews giữ nguyên)
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("customer-order")
     @JsonIgnore
     private Set<Order> orders;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("user-review")
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("customer-review")
     @JsonIgnore
     private Set<Review> reviews;
 
-    // --- THAY ĐỔI 2: PHƯƠNG THỨC CỦA UserDetails ---
+
+    // --- BẮT ĐẦU SỬA LỖI (THÊM HÀM NÀY) ---
+    /**
+     * Phương thức này không được lưu vào CSDL (do không có @Column),
+     * nhưng sẽ được Jackson (JSON serializer) đọc khi trả về /api/auth/me.
+     * Điều này cho phép frontend (LoginPage) kiểm tra (user.role === 'DINER').
+     */
+    public String getRole() {
+        return "DINER";
+    }
+    // --- KẾT THÚC SỬA LỖI ---
+
+
+    // --- (Các phương thức @Override của UserDetails giữ nguyên) ---
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.name());
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_DINER");
         return Collections.singletonList(authority);
     }
 
@@ -82,7 +85,7 @@ public class User implements Serializable, UserDetails {
 
     @Override
     public String getUsername() {
-        return phoneNumber; // Spring Security sẽ dùng SĐT để đăng nhập
+        return phoneNumber;
     }
 
     @Override
@@ -93,5 +96,4 @@ public class User implements Serializable, UserDetails {
     public boolean isCredentialsNonExpired() { return true; }
     @Override
     public boolean isEnabled() { return true; }
-    // --- KẾT THÚC THAY ĐỔI 2 ---
 }

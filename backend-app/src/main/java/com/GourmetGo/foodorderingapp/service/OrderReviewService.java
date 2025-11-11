@@ -26,14 +26,14 @@ public class OrderReviewService {
     private MenuItemRepository menuItemRepository;
 
     @Transactional
-    public void submitOrderReview(OrderReviewRequest request, User user) {
+    public void submitOrderReview(OrderReviewRequest request, Customer customer) { // <-- Sửa: User -> Customer
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + request.getOrderId()));
 
         // --- Kiểm tra các ràng buộc ---
 
         // 1. Kiểm tra chính chủ
-        if (!order.getUser().getId().equals(user.getId())) {
+        if (!order.getCustomer().getId().equals(customer.getId())) { // <-- Sửa: .getUser() -> .getCustomer()
             throw new SecurityException("Bạn không có quyền đánh giá đơn hàng này.");
         }
 
@@ -55,22 +55,22 @@ public class OrderReviewService {
 
         // --- Lưu đánh giá ---
 
-        // 1. Lưu đánh giá Giao hàng (Goal 1)
+        // 1. Lưu đánh giá Giao hàng
         order.setDeliveryRating(request.getDeliveryRating());
         order.setDeliveryComment(request.getDeliveryComment());
         order.setReviewed(true); // (Goal 4)
         orderRepository.save(order);
 
-        // 2. Lưu đánh giá Món ăn (Goal 2)
+        // 2. Lưu đánh giá Món ăn
         for (ItemReviewRequest itemReview : request.getItemReviews()) {
             MenuItem menuItem = menuItemRepository.findById(itemReview.getMenuItemId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn ID: " + itemReview.getMenuItemId()));
 
             Review review = new Review();
-            review.setUser(user);
-            review.setOrder(order); // Liên kết với đơn hàng
+            review.setCustomer(customer); // <-- Sửa: .setUser() -> .setCustomer()
+            review.setOrder(order);
             review.setMenuItem(menuItem);
-            review.setRating(itemReview.getRating()); // (Goal 3)
+            review.setRating(itemReview.getRating());
             review.setComment(itemReview.getComment());
 
             reviewRepository.save(review);

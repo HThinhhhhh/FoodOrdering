@@ -21,33 +21,31 @@ export const Cart = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // --- 1. THAY ĐỔI STATE ---
-    // Từ boolean (hasActiveOrder) sang number (activeOrderCount)
+    // --- (State kiểm tra đơn hàng hoạt động) ---
     const [activeOrderCount, setActiveOrderCount] = useState(0);
     const [isLoadingOrders, setIsLoadingOrders] = useState(true);
-    // --- KẾT THÚC THAY ĐỔI ---
 
     useEffect(() => {
         if (!currentUser) {
             setIsLoadingOrders(false);
-            setActiveOrderCount(0); // Nếu không đăng nhập, 0 đơn
+            setActiveOrderCount(0);
             return;
         }
 
         const checkActiveOrders = async () => {
             setIsLoadingOrders(true);
             try {
+                // (API này đã được OrderController (Backend Phần 4) bảo vệ
+                //  và sửa để dùng customer.getId())
                 const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 const orders = response.data;
 
-                // --- 2. SỬA LOGIC LỌC (ĐẾM thay vì SOME) ---
                 const activeOrders = orders.filter(order =>
                     order.status === 'RECEIVED' ||
                     order.status === 'PREPARING' ||
                     order.status === 'READY'
                 );
                 setActiveOrderCount(activeOrders.length);
-                // --- KẾT THÚC SỬA ---
 
             } catch (error) {
                 console.error("Lỗi khi kiểm tra đơn hàng đang hoạt động:", error);
@@ -58,11 +56,12 @@ export const Cart = () => {
 
         checkActiveOrders();
     }, [currentUser]);
+    // --- KẾT THÚC LOGIC KIỂM TRA ---
 
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     const renderCheckoutButton = () => {
-        // --- 3. CẬP NHẬT LOGIC VÔ HIỆU HÓA ---
+        // --- (Cập nhật logic vô hiệu hóa) ---
         const hasReachedLimit = activeOrderCount >= 3;
         const isDisabled = cartItems.length === 0 || !currentUser || hasReachedLimit || isLoadingOrders;
 
@@ -72,7 +71,6 @@ export const Cart = () => {
         if (isLoadingOrders) title = "Đang kiểm tra đơn hàng...";
         if (hasReachedLimit) title = "Bạn đã đạt giới hạn 3 đơn hàng đang xử lý!";
 
-        // --- 4. CẬP NHẬT VĂN BẢN NÚT ---
         let buttonText = `${formatCurrency(total)} - Thanh toán`;
         if (isLoadingOrders) buttonText = "Đang tải...";
         if (hasReachedLimit) buttonText = `Đã đạt giới hạn (${activeOrderCount}/3 đơn)`;
@@ -109,7 +107,6 @@ export const Cart = () => {
                 <p>Giỏ hàng của bạn đang trống.</p>
             ) : (
                 <ul>
-                    {/* (Phần map cartItems giữ nguyên) */}
                     {cartItems.map(item => (
                         <li key={item.id} style={{ marginBottom: '10px' }}>
                             {item.name}
@@ -131,6 +128,7 @@ export const Cart = () => {
                                     {formatCurrency(item.price * item.quantity)}
                                 </span>
                             </div>
+                            {/* XÓA Ô INPUT GHI CHÚ (Theo yêu cầu mới) */}
                         </li>
                     ))}
                 </ul>
@@ -140,7 +138,6 @@ export const Cart = () => {
 
             {renderCheckoutButton()}
 
-            {/* Hiển thị số đơn đang hoạt động */}
             {currentUser && !isLoadingOrders && (
                 <p style={{textAlign: 'center', fontSize: '0.9em', color: '#555'}}>
                     Đơn hàng đang xử lý: {activeOrderCount} / 3

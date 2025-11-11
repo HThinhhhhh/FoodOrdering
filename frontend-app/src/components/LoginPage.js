@@ -1,14 +1,13 @@
-// src/components/LoginPage.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom'; // 1. Thêm Link
+import { useNavigate, Link } from 'react-router-dom';
 
 export const LoginPage = () => {
-    // --- THAY ĐỔI STATE ---
-    const [phoneNumber, setPhoneNumber] = useState(''); // 2. Đổi state
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, currentUser, logout } = useAuth();
+    // --- 1. SỬA: LẤY ĐÚNG HÀM ---
+    const { customerLogin, currentUser } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,14 +20,13 @@ export const LoginPage = () => {
         e.preventDefault();
         setError('');
         try {
-            // --- 3. GỬI SĐT ---
-            const user = await login(phoneNumber, password);
+            // --- 2. SỬA: GỌI ĐÚNG HÀM ---
+            const user = await customerLogin(phoneNumber, password);
 
             if (user.role === 'DINER') {
                 navigate('/');
             } else {
                 setError('Đây không phải tài khoản của khách hàng.');
-                await logout();
             }
         } catch (err) {
             setError('Đăng nhập thất bại. Vui lòng kiểm tra lại SĐT/mật khẩu.');
@@ -39,7 +37,6 @@ export const LoginPage = () => {
         <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto' }}>
             <h2>Đăng nhập Khách hàng</h2>
             <form onSubmit={handleSubmit}>
-                {/* --- 4. SỬA GIAO DIỆN --- */}
                 <div style={{ marginBottom: '10px' }}>
                     <label>Số điện thoại: </label>
                     <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} style={{ width: '100%', padding: '8px' }} />
@@ -51,7 +48,6 @@ export const LoginPage = () => {
                 {error && <p style={{ color: 'red' }}>{error}</p>}
                 <button type="submit" style={{ marginTop: '20px', padding: '10px 15px' }}>Đăng nhập</button>
             </form>
-            {/* 5. THÊM LINK ĐĂNG KÝ */}
             <p>
                 Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
             </p>

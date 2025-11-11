@@ -35,7 +35,6 @@ public class OrderService {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
-    // (submitOrder giữ nguyên)
     public void submitOrder(OrderRequest request) {
         try {
             String orderJsonString = objectMapper.writeValueAsString(request);
@@ -47,10 +46,9 @@ public class OrderService {
         }
     }
 
-    // (getOrdersForUser giữ nguyên)
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getOrdersForUser(Long userId) {
-        List<Order> orders = orderRepository.findByUserIdOrderByOrderTimeDesc(userId);
+    public List<Map<String, Object>> getOrdersForUser(Long customerId) { // <-- SỬA: userId -> customerId
+        List<Order> orders = orderRepository.findByCustomerIdOrderByOrderTimeDesc(customerId); // <-- SỬA
         return orders.stream()
                 .map(this::convertOrderToDto)
                 .collect(Collectors.toList());
@@ -64,7 +62,7 @@ public class OrderService {
         orderDto.put("id", order.getId());
         orderDto.put("status", order.getStatus().toString());
         orderDto.put("pickupWindow", order.getPickupWindow());
-        orderDto.put("userId", order.getUser().getId());
+        orderDto.put("userId", order.getCustomer().getId()); // <-- SỬA: getUser() -> getCustomer()
         orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
@@ -74,8 +72,8 @@ public class OrderService {
         orderDto.put("shippingFee", order.getShippingFee());
         orderDto.put("grandTotal", order.getGrandTotal());
         orderDto.put("isReviewed", order.isReviewed());
-        orderDto.put("orderTime", order.getOrderTime());
-
+        orderDto.put("deliveryRating", order.getDeliveryRating());
+        orderDto.put("deliveryComment", order.getDeliveryComment());
         orderDto.put("cancellationReason", order.getCancellationReason());
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {

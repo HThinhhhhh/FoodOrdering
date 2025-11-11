@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { formatCurrency } from '../utils/formatCurrency';
+import { formatCurrency } from '../utils/formatCurrency'; // 1. IMPORT
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -37,33 +37,27 @@ export const MyOrders = () => {
                     <th style={{ textAlign: 'left' }}>Trạng thái</th>
                     <th style={{ textAlign: 'left' }}>Tổng tiền</th>
                     <th style={{ textAlign: 'left' }}>Thời gian đặt</th>
-                    <th style={{ textAlign: 'left' }}>Hành động</th>
+                    <th style={{ textAlign: 'left' }}>Chi tiết</th>
                 </tr>
                 </thead>
                 <tbody>
                 {orders.map(order => {
-                    // --- BẮT ĐẦU: LOGIC KIỂM TRA ĐÁNH GIÁ (Goal 4, 5) ---
-                    // (3 * 24 * 60 * 60 * 1000 = 259200000ms)
+                    // (Logic kiểm tra review giữ nguyên)
                     const threeDaysAgo = Date.now() - 259200000;
                     const isRecent = new Date(order.orderTime).getTime() > threeDaysAgo;
-
-                    // Điều kiện để hiển thị nút Đánh giá
                     const canReview = order.status === 'COMPLETED' && !order.isReviewed && isRecent;
-                    // --- KẾT THÚC LOGIC ---
 
                     return (
                         <tr key={order.id} style={{ borderBottom: '1px solid #ccc' }}>
                             <td>#{order.id}</td>
                             <td>{order.status}</td>
+                            {/* 2. SỬA ĐỊNH DẠNG TIỀN */}
                             <td>{formatCurrency(order.grandTotal)}</td>
                             <td>{new Date(order.orderTime).toLocaleString()}</td>
                             <td>
-                                {/* 1. Link "Bấm để xem" (Luôn luôn có) */}
                                 <Link to={`/order-status/${order.id}`}>
                                     Bấm để xem
                                 </Link>
-
-                                {/* 2. Link "Đánh giá" (Chỉ hiện khi đủ điều kiện) */}
                                 {canReview && (
                                     <Link
                                         to={`/review/${order.id}`}
@@ -72,8 +66,6 @@ export const MyOrders = () => {
                                         (Đánh giá)
                                     </Link>
                                 )}
-
-                                {/* 3. Text "Đã đánh giá" */}
                                 {order.isReviewed && (
                                     <span style={{marginLeft: '10px', color: 'gray'}}>(Đã đánh giá)</span>
                                 )}

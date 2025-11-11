@@ -1,7 +1,9 @@
 package com.GourmetGo.foodorderingapp.controller;
 
 import com.GourmetGo.foodorderingapp.dto.OrderRequest;
-import com.GourmetGo.foodorderingapp.model.User;
+import com.GourmetGo.foodorderingapp.model.Customer; // <-- 1. Sửa: User -> Customer
+import com.GourmetGo.foodorderingapp.model.OrderStatus;
+import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import com.GourmetGo.foodorderingapp.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -9,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import com.GourmetGo.foodorderingapp.model.OrderStatus;
-import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import java.util.List;
 import java.util.Map;
 
@@ -27,19 +27,18 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<String> createOrder(
             @RequestBody OrderRequest orderRequest,
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal Customer customer // <-- 2. Sửa: User -> Customer
     ) {
-        // --- SỬA LOGIC KIỂM TRA (Từ 1 lên 3) ---
+        // --- SỬA LOGIC KIỂM TRA (Dùng Customer) ---
         List<OrderStatus> activeStatuses = List.of(
                 OrderStatus.RECEIVED,
                 OrderStatus.PREPARING,
                 OrderStatus.READY
         );
 
-        // 1. Đổi từ 'existsBy...' sang 'countBy...'
-        int activeOrderCount = orderRepository.countByUserIdAndStatusIn(user.getId(), activeStatuses);
+        // 3. Sửa: user.getId() -> customer.getId()
+        int activeOrderCount = orderRepository.countByCustomerIdAndStatusIn(customer.getId(), activeStatuses);
 
-        // 2. Kiểm tra nếu >= 3
         if (activeOrderCount >= 3) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body("Bạn đã đạt giới hạn 3 đơn hàng đang hoạt động. Vui lòng hoàn thành các đơn hàng cũ trước khi đặt đơn mới.");
@@ -47,7 +46,7 @@ public class OrderController {
         // --- KẾT THÚC SỬA ---
 
         try {
-            orderRequest.setUserId(user.getId());
+            orderRequest.setUserId(customer.getId()); // Gán ID của Customer
             orderService.submitOrder(orderRequest);
 
             return ResponseEntity.status(HttpStatus.ACCEPTED)
@@ -58,13 +57,13 @@ public class OrderController {
         }
     }
 
-    // (getMyOrders() giữ nguyên)
     @GetMapping("/my-orders")
     public ResponseEntity<List<Map<String, Object>>> getMyOrders(
-            @AuthenticationPrincipal User user
+            @AuthenticationPrincipal Customer customer // <-- 4. Sửa: User -> Customer
     ) {
         try {
-            List<Map<String, Object>> userOrders = orderService.getOrdersForUser(user.getId());
+            // 5. Sửa: user.getId() -> customer.getId()
+            List<Map<String, Object>> userOrders = orderService.getOrdersForUser(customer.getId());
             return ResponseEntity.ok(userOrders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);

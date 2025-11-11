@@ -4,15 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export const KitchenLoginPage = () => {
-    // --- THAY ĐỔI STATE ---
-    const [phoneNumber, setPhoneNumber] = useState(''); // 1. Đổi state
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login, currentUser, logout } = useAuth();
+    // --- 1. SỬA: LẤY ĐÚNG HÀM ---
+    const { employeeLogin, currentUser } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (currentUser && currentUser.role === 'KITCHEN') {
+        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN')) {
             navigate('/kitchen');
         }
     }, [currentUser, navigate]);
@@ -21,14 +21,13 @@ export const KitchenLoginPage = () => {
         e.preventDefault();
         setError('');
         try {
-            // --- 2. GỬI SĐT ---
-            const user = await login(phoneNumber, password);
+            // --- 2. SỬA: GỌI ĐÚNG HÀM ---
+            const user = await employeeLogin(username, password);
 
-            if (user.role === 'KITCHEN') {
+            if (user.role === 'KITCHEN' || user.role === 'ADMIN') {
                 navigate('/kitchen');
             } else {
-                setError('Đây không phải tài khoản của nhân viên bếp.');
-                await logout();
+                setError('Đây không phải tài khoản của nhân viên/admin.');
             }
         } catch (err) {
             setError('Đăng nhập thất bại.');
@@ -37,19 +36,18 @@ export const KitchenLoginPage = () => {
 
     return (
         <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto' }}>
-            <h2>Đăng nhập Màn hình Bếp (KDS)</h2>
+            <h2>Đăng nhập Bếp / Admin</h2>
             <form onSubmit={handleSubmit}>
-                {/* --- 3. SỬA GIAO DIỆN --- */}
                 <div style={{ marginBottom: '10px' }}>
-                    <label>Số điện thoại: </label>
-                    <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+                    <label>Username: </label>
+                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '8px' }} />
                 </div>
                 <div style={{ marginTop: '10px' }}>
                     <label>Mật khẩu: </label>
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '8px' }} />
                 </div>
                 {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" style={{ marginTop: '20px', padding: '10px 15px' }}>Đăng nhập Bếp</button>
+                <button type="submit" style={{ marginTop: '20px', padding: '10px 15px' }}>Đăng nhập</button>
             </form>
         </div>
     );

@@ -28,7 +28,7 @@ const buttonStyle = {
 };
 
 export const KitchenHeader = () => {
-    const { currentUser, logout } = useAuth();
+    const { currentUser, logout } = useAuth(); // Dùng hàm logout chung
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -38,16 +38,21 @@ export const KitchenHeader = () => {
 
     const renderLinks = () => {
         // Chỉ render link cho Bếp
-        if (currentUser && currentUser.role === 'KITCHEN') {
-            return <Link to="/kitchen" style={linkStyle}>Màn hình Bếp</Link>;
+        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN')) {
+            return (
+                <>
+                    <Link to="/kitchen" style={linkStyle}>Màn hình Bếp</Link>
+                    {/* (Bạn có thể thêm Link '/admin' ở đây nếu currentUser.role === 'ADMIN') */}
+                </>
+            );
         } else {
-            return <Link to="/kitchen/login" style={linkStyle}>Đăng nhập Bếp</Link>;
+            return <Link to="/kitchen/login" style={linkStyle}>Đăng nhập Bếp/Admin</Link>;
         }
     };
 
     const renderLogoutButton = () => {
-        // Chỉ hiện nút logout nếu là KITCHEN
-        if (currentUser && currentUser.role === 'KITCHEN') {
+        // Chỉ hiện nút logout nếu là KITCHEN hoặc ADMIN
+        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN')) {
             return <button onClick={handleLogout} style={buttonStyle}>Đăng xuất ({currentUser.username})</button>;
         }
         return null;

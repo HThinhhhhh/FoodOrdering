@@ -1,7 +1,7 @@
 package com.GourmetGo.foodorderingapp.controller;
 
 import com.GourmetGo.foodorderingapp.dto.OrderReviewRequest;
-import com.GourmetGo.foodorderingapp.model.User;
+import com.GourmetGo.foodorderingapp.model.Customer; // <-- 1. Sửa: User -> Customer
 import com.GourmetGo.foodorderingapp.service.OrderReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,15 +16,13 @@ public class OrderReviewController {
     @Autowired
     private OrderReviewService orderReviewService;
 
-    // (Xóa ReviewController cũ nếu có)
-
     @PostMapping("/order")
     public ResponseEntity<String> submitOrderReview(
             @RequestBody OrderReviewRequest request,
-            @AuthenticationPrincipal User user) {
+            @AuthenticationPrincipal Customer customer) { // <-- 2. Sửa: User -> Customer
 
         try {
-            orderReviewService.submitOrderReview(request, user);
+            orderReviewService.submitOrderReview(request, customer);
             return ResponseEntity.status(HttpStatus.CREATED).body("Đánh giá đã được ghi nhận.");
         } catch (IllegalStateException | SecurityException e) {
             // Lỗi nghiệp vụ (đã đánh giá, quá hạn, chưa hoàn thành)
