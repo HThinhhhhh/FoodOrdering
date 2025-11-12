@@ -1,20 +1,23 @@
 package com.GourmetGo.foodorderingapp.controller;
 
 import com.GourmetGo.foodorderingapp.dto.UpdateStatusRequest;
-import com.GourmetGo.foodorderingapp.dto.CancelRequest; // 1. IMPORT MỚI
+import com.GourmetGo.foodorderingapp.dto.CancelRequest;
+import com.GourmetGo.foodorderingapp.dto.NoteRequest;
+import com.GourmetGo.foodorderingapp.model.Employee; // <-- THÊM IMPORT
 import com.GourmetGo.foodorderingapp.service.KitchenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.access.AccessDeniedException; // <-- THÊM IMPORT
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // <-- THÊM IMPORT
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-// --- THÊM CÁC IMPORT NÀY ---
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-// --- KẾT THÚC THÊM IMPORT ---
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Map;
@@ -25,32 +28,48 @@ public class KitchenController {
     @Autowired
     private KitchenService kitchenService;
 
-    // (handleStatusUpdate() giữ nguyên)
     @MessageMapping("/kitchen/update-status")
-    public void handleStatusUpdate(@Payload UpdateStatusRequest request) {
-        kitchenService.updateOrderStatus(request);
+    public void handleStatusUpdate(@Payload UpdateStatusRequest request, @AuthenticationPrincipal Employee employee) {
+        String role = "ROLE_" + employee.getRole().name();
+        // (Đã thêm logic kiểm tra quyền trong KitchenService)
+        kitchenService.updateOrderStatus(request, role);
     }
 
-    // (getActiveOrders() giữ nguyên)
     @GetMapping("/api/kitchen/active-orders")
     @ResponseBody
     public List<Map<String, Object>> getActiveOrders() {
         return kitchenService.getActiveOrders();
     }
 
-    // --- BẮT ĐẦU: THÊM API HỦY ĐƠN (Goal 2) ---
+    // --- SỬA ĐỔI HÀM NÀY ---
     @PostMapping("/api/kitchen/cancel-order")
-    @ResponseBody // (Vì đây là @Controller, không phải @RestController)
-    public ResponseEntity<String> cancelOrder(@RequestBody CancelRequest request) {
+    @ResponseBody
+    public ResponseEntity<String> cancelOrder(
+            @RequestBody CancelRequest request,
+            @AuthenticationPrincipal Employee employee) { // <-- Lấy Employee
         try {
-            kitchenService.cancelOrder(request);
+            // Lấy vai trò từ principal
+            String role = "ROLE_" + employee.getRole().name();
+            kitchenService.cancelOrder(request, role); // <-- Truyền vai trò
             return ResponseEntity.ok("Đơn hàng đã được hủy.");
-        } catch (IllegalStateException e) {
-            // (Ví dụ: Đơn hàng đã hoàn thành)
+        } catch (IllegalStateException | AccessDeniedException e) { // <-- Bắt lỗi nghiệp vụ/quyền
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Lỗi khi hủy đơn hàng.");
         }
     }
-    // --- KẾT THÚC: THÊM API HỦY ĐƠN ---
+    // --- KẾT THÚC SỬA ĐỔI ---
+
+    @PostMapping("/api/kitchen/order/{id}/kitchen-note")
+    @ResponseBody
+    public ResponseEntity<String> addKitchenNote(
+            @PathVariable Long id,
+            @RequestBody NoteRequest request) {
+        try {
+            kitchenService.addKitchenNote(id, request.getNote());
+            return ResponseEntity.ok("Đã thêm ghi chú bếp.");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Lỗi khi thêm ghi chú.");
+        }
+    }
 }

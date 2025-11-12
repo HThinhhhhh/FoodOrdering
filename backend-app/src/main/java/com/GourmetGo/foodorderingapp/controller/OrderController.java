@@ -1,10 +1,11 @@
 package com.GourmetGo.foodorderingapp.controller;
 
 import com.GourmetGo.foodorderingapp.dto.OrderRequest;
-import com.GourmetGo.foodorderingapp.model.Customer; // <-- 1. Sửa: User -> Customer
+import com.GourmetGo.foodorderingapp.model.Customer;
 import com.GourmetGo.foodorderingapp.model.OrderStatus;
 import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import com.GourmetGo.foodorderingapp.service.OrderService;
+import com.GourmetGo.foodorderingapp.dto.ReOrderItemDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,6 +68,24 @@ public class OrderController {
             return ResponseEntity.ok(userOrders);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/{orderId}/reorder")
+    public ResponseEntity<List<ReOrderItemDTO>> getReOrderData(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal Customer customer
+    ) {
+        try {
+            // Lấy dữ liệu và kiểm tra quyền sở hữu trong service
+            List<ReOrderItemDTO> reOrderItems = orderService.getReOrderData(orderId, customer.getId());
+            return ResponseEntity.ok(reOrderItems);
+        } catch (SecurityException e) {
+            // Lỗi nếu cố gắng đặt lại đơn hàng của người khác
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        } catch (RuntimeException e) {
+            // Lỗi nếu không tìm thấy đơn hàng
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
     }
 }

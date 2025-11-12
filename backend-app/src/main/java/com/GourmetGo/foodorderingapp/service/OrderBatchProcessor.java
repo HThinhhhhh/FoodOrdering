@@ -5,7 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.GourmetGo.foodorderingapp.dto.OrderItemRequest;
 import com.GourmetGo.foodorderingapp.dto.OrderRequest;
 import com.GourmetGo.foodorderingapp.model.*;
-import com.GourmetGo.foodorderingapp.repository.CustomerRepository; // <-- 1. SỬA
+import com.GourmetGo.foodorderingapp.repository.CustomerRepository;
 import com.GourmetGo.foodorderingapp.repository.MenuItemRepository;
 import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import jakarta.annotation.PostConstruct;
@@ -35,7 +35,7 @@ public class OrderBatchProcessor {
 
     @Autowired private RedisTemplate<String, String> redisTemplate;
     @Autowired private OrderRepository orderRepository;
-    @Autowired private CustomerRepository customerRepository; // <-- 2. SỬA
+    @Autowired private CustomerRepository customerRepository;
     @Autowired private MenuItemRepository menuItemRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate;
 
@@ -46,23 +46,26 @@ public class OrderBatchProcessor {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
+    // (Hàm processOrderQueue và transformRequestToOrder giữ nguyên)
     @Scheduled(fixedRate = 1000)
     @Transactional
     public void processOrderQueue() {
-        // (Logic lấy queue giữ nguyên)
         log.info("Đang kiểm tra hàng đợi đơn hàng...");
         List<String> orderJsonList = redisTemplate.opsForList().range(ORDER_QUEUE_KEY, 0, -1);
         if (orderJsonList == null || orderJsonList.isEmpty()) { log.info("Hàng đợi trống, không có gì để xử lý."); return; }
         log.info("Tìm thấy {} đơn hàng...", orderJsonList.size());
+
         List<Order> ordersToSave = new ArrayList<>();
+        long processedCount = 0;
 
         for (String orderJson : orderJsonList) {
+            processedCount++;
             try {
                 OrderRequest request = objectMapper.readValue(orderJson, OrderRequest.class);
                 Order order = transformRequestToOrder(request);
                 ordersToSave.add(order);
             } catch (Exception e) {
-                log.error("Lỗi xử lý đơn hàng JSON: {}. Lỗi: {}", orderJson, e.getMessage());
+                log.error("Lỗi xử lý đơn hàng JSON (sẽ bị xóa khỏi queue): {}. Lỗi: {}", orderJson, e.getMessage());
             }
         }
 
@@ -72,24 +75,25 @@ public class OrderBatchProcessor {
 
             for (Order savedOrder : savedOrders) {
                 Map<String, Object> orderDto = convertOrderToDto(savedOrder);
-                log.info("Đang gửi đơn hàng DTO tới /topic/kitchen: {}", orderDto);
-                messagingTemplate.convertAndSend("/topic/kitchen", orderDto);
+
+                log.info("Đang gửi đơn hàng DTO tới /topic/admin/order-updates: {}", orderDto);
+                messagingTemplate.convertAndSend("/topic/admin/order-updates", orderDto);
             }
         }
-        redisTemplate.opsForList().trim(ORDER_QUEUE_KEY, orderJsonList.size(), -1);
+
+        if (processedCount > 0) {
+            redisTemplate.opsForList().trim(ORDER_QUEUE_KEY, processedCount, -1);
+            log.info("Đã xóa {} đơn hàng đã xử lý khỏi queue.", processedCount);
+        }
     }
 
     private Order transformRequestToOrder(OrderRequest request) {
-        // --- 3. SỬA: Tìm Customer (thay vì User) ---
         Customer customer = customerRepository.findById(request.getUserId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Customer ID: " + request.getUserId()));
 
         Order order = new Order();
-        order.setCustomer(customer); // <-- 4. SỬA
-        order.setPickupWindow(request.getPickupWindow());
-        order.setStatus(OrderStatus.RECEIVED);
-
-        // (Thêm các trường mới: deliveryAddress, shipperNote, paymentMethod, chi phí...)
+        order.setCustomer(customer);
+        order.setStatus(OrderStatus.PENDING_CONFIRMATION);
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setShipperNote(request.getShipperNote());
         order.setPaymentMethod(request.getPaymentMethod());
@@ -97,12 +101,18 @@ public class OrderBatchProcessor {
         order.setVatAmount(request.getVatAmount());
         order.setShippingFee(request.getShippingFee());
         order.setGrandTotal(request.getGrandTotal());
+        order.setPickupWindow(request.getPickupWindow());
 
-        // (Logic xử lý items/note giữ nguyên)
         Set<OrderItem> orderItems = new HashSet<>();
         for (OrderItemRequest itemRequest : request.getItems()) {
             MenuItem menuItem = menuItemRepository.findById(itemRequest.getMenuItemId())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy MenuItem ID: " + itemRequest.getMenuItemId()));
+            if (menuItem.getStatus() != MenuItemStatus.ON_SALE) {
+                throw new IllegalStateException(
+                        "Món ăn '" + menuItem.getName() + "' (ID: " + menuItem.getId() + ") " +
+                                "hiện không có sẵn (" + menuItem.getStatus().toString() + ")."
+                );
+            }
             OrderItem orderItem = new OrderItem();
             orderItem.setMenuItem(menuItem);
             orderItem.setQuantity(itemRequest.getQuantity());
@@ -112,20 +122,24 @@ public class OrderBatchProcessor {
             }
             orderItems.add(orderItem);
         }
-
         order.setItems(orderItems);
         return order;
     }
+
 
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
         orderDto.put("id", order.getId());
         orderDto.put("status", order.getStatus().toString());
         orderDto.put("pickupWindow", order.getPickupWindow());
-        orderDto.put("userId", order.getCustomer().getId()); // <-- 5. SỬA: getUser() -> getCustomer()
-        orderDto.put("orderTime", order.getOrderTime());
 
-        // (Các trường mới: deliveryAddress, shipperNote, paymentMethod, chi phí...)
+        // --- THÊM THÔNG TIN KHÁCH HÀNG ---
+        orderDto.put("userId", order.getCustomer().getId());
+        orderDto.put("customerName", order.getCustomer().getName());
+        orderDto.put("customerPhone", order.getCustomer().getPhoneNumber());
+        // --- KẾT THÚC THÊM ---
+
+        orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
         orderDto.put("paymentMethod", order.getPaymentMethod());
@@ -133,14 +147,20 @@ public class OrderBatchProcessor {
         orderDto.put("vatAmount", order.getVatAmount());
         orderDto.put("shippingFee", order.getShippingFee());
         orderDto.put("grandTotal", order.getGrandTotal());
+        orderDto.put("isReviewed", order.isReviewed());
+        orderDto.put("deliveryRating", order.getDeliveryRating());
+        orderDto.put("deliveryComment", order.getDeliveryComment());
         orderDto.put("cancellationReason", order.getCancellationReason());
+        orderDto.put("kitchenNote", order.getKitchenNote());
+        orderDto.put("deliveryNote", order.getDeliveryNote());
+        orderDto.put("employeeNote", order.getEmployeeNote());
 
-        // (Logic xử lý itemDtos/note giữ nguyên)
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuItemId", item.getMenuItem().getId());
             itemMap.put("quantity", item.getQuantity());
             itemMap.put("note", item.getNote());
+            itemMap.put("name", item.getMenuItem().getName());
             return itemMap;
         }).collect(Collectors.toList());
 

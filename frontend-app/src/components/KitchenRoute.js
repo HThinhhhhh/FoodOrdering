@@ -3,6 +3,10 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 
+/**
+ * Route này CHỈ BẢO VỆ Màn hình Bếp (KDS).
+ * Chỉ cho phép KITCHEN và ADMIN.
+ */
 export const KitchenRoute = ({ children }) => {
     const { currentUser, loading } = useAuth();
     let location = useLocation();
@@ -16,12 +20,19 @@ export const KitchenRoute = ({ children }) => {
         return <Navigate to="/kitchen/login" state={{ from: location }} replace />;
     }
 
-    if (currentUser.role !== 'KITCHEN' && currentUser.role !== 'ADMIN') {
-        // Nếu đăng nhập nhưng là Khách (DINER)
-        // Hãy điều hướng họ đến trang Khách (ở Cổng 3000)
-        window.location.href = 'http://localhost:3000';
-        return null;
+    // --- SỬA ĐỔI LOGIC ---
+    // 1. Nếu là Bếp hoặc Admin -> OK
+    if (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN') {
+        return children; // Cho phép truy cập KDS
     }
 
-    return children; // Cho phép truy cập
+    // 2. Nếu là Nhân viên (EMPLOYEE) -> Chuyển hướng
+    if (currentUser.role === 'EMPLOYEE') {
+        return <Navigate to="/kitchen/admin/orders" state={{ from: location }} replace />;
+    }
+
+    // 3. Nếu là Khách (DINER) -> Đá về trang khách
+    window.location.href = 'http://localhost:3000';
+    return null;
+    // --- KẾT THÚC SỬA ĐỔI ---
 };

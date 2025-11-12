@@ -1,18 +1,17 @@
 package com.GourmetGo.foodorderingapp.service;
 
+import com.GourmetGo.foodorderingapp.dto.MenuItemAdminRequestDTO; // <-- THÊM IMPORT MỚI
+import com.GourmetGo.foodorderingapp.dto.MenuItemDTO;
 import com.GourmetGo.foodorderingapp.model.MenuItem;
+import com.GourmetGo.foodorderingapp.model.MenuItemStatus;
 import com.GourmetGo.foodorderingapp.repository.MenuItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
+// import org.springframework.cache.annotation.Cacheable; // Tạm thời comment cache
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
-// --- BẮT ĐẦU: THÊM IMPORT MỚI ---
-// Thêm 2 import này để sử dụng DTO và Stream API
-import com.GourmetGo.foodorderingapp.dto.MenuItemDTO;
 import java.util.stream.Collectors;
-// --- KẾT THÚC: THÊM IMPORT MỚI ---
 
 @Service
 public class MenuService {
@@ -21,22 +20,13 @@ public class MenuService {
     private MenuItemRepository menuItemRepository;
 
     /**
-     * Lấy danh sách món ăn, hỗ trợ lọc theo món chay và món cay.
-     * Kết quả được cache trong "menuCache".
+     * Dành cho KHÁCH HÀNG: Lấy các món đang bán hoặc tạm hết hàng
      */
-
-    // --- SỬA ĐỔI 1: Thay đổi kiểu trả về của phương thức ---
-    // Từ: public List<MenuItem> getMenuItems(...)
-    // Thành: public List<MenuItemDTO> getMenuItems(...)
-   // @Cacheable("menuCache")
+    // @Cacheable("menuCache") // Tạm thời tắt Cache để dễ debug
     public List<MenuItemDTO> getMenuItems(Boolean isVegetarian, Boolean isSpicy) {
-        // In ra log để kiểm tra cache (sẽ chỉ chạy lần đầu)
-        System.out.println("Đang thực hiện query CSDL để lấy menu...");
+        System.out.println("Đang thực hiện query CSDL để lấy menu (cho khách)...");
+        List<MenuItem> menuItems;
 
-        // --- SỬA ĐỔI 2: Tạo biến tạm thời để lưu danh sách Entity ---
-        List<MenuItem> menuItems; // Biến này sẽ giữ kết quả từ CSDL
-
-        // Logic lọc của bạn (giữ nguyên)
         if (isVegetarian != null && isSpicy != null) {
             menuItems = menuItemRepository.findByIsVegetarianAndIsSpicy(isVegetarian, isSpicy);
         } else if (isVegetarian != null) {
@@ -44,21 +34,82 @@ public class MenuService {
         } else if (isSpicy != null) {
             menuItems = menuItemRepository.findByIsSpicy(isSpicy);
         } else {
-            // Không có filter, trả về tất cả
             menuItems = menuItemRepository.findAll();
         }
 
-        // --- SỬA ĐỔI 3: Chuyển đổi List<MenuItem> thành List<MenuItemDTO> ---
-        // Chúng ta duyệt qua danh sách menuItems, gọi convertToDTO cho từng món
-        // và thu thập kết quả vào một danh sách DTO mới để trả về.
         return menuItems.stream()
+                .filter(item -> item.getStatus() != MenuItemStatus.DISCONTINUED)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    // --- BẮT ĐẦU: THÊM PHƯƠNG THỨC TRỢ GIÚP MỚI ---
-    // Thêm phương thức private này vào bên trong lớp MenuService
-    // Nó chịu trách nhiệm chuyển đổi 1 MenuItem (Entity) sang 1 MenuItemDTO
+    /**
+     * Dành cho ADMIN: Lấy TẤT CẢ các món (kể cả món đã ngừng bán)
+     */
+    @Transactional(readOnly = true) // Thêm Transactional
+    public List<MenuItem> getAllMenuItemsForAdmin() {
+        System.out.println("Đang thực hiện query CSDL để lấy menu (cho admin)...");
+        return menuItemRepository.findAll();
+    }
+
+    // --- SỬA CÁC HÀM CRUD CHO ADMIN ---
+
+    @Transactional // Thêm Transactional
+    public MenuItem createMenuItem(MenuItemAdminRequestDTO dto) {
+        MenuItem newItem = new MenuItem();
+        // Chuyển dữ liệu từ DTO sang Entity
+        newItem.setName(dto.getName());
+        newItem.setDescription(dto.getDescription());
+        newItem.setPrice(dto.getPrice());
+        newItem.setImageUrl(dto.getImageUrl());
+        newItem.setCategory(dto.getCategory());
+        newItem.setStatus(dto.getStatus());
+        newItem.setVegetarian(dto.isVegetarian());
+        newItem.setSpicy(dto.isSpicy());
+        newItem.setPopular(dto.isPopular());
+
+        return menuItemRepository.save(newItem);
+    }
+
+    @Transactional // Thêm Transactional
+    public MenuItem updateMenuItem(Long id, MenuItemAdminRequestDTO dto) {
+        MenuItem existingItem = menuItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn ID: " + id));
+
+        // Cập nhật các trường từ DTO
+        existingItem.setName(dto.getName());
+        existingItem.setDescription(dto.getDescription());
+        existingItem.setPrice(dto.getPrice());
+        existingItem.setImageUrl(dto.getImageUrl());
+        existingItem.setCategory(dto.getCategory());
+        existingItem.setStatus(dto.getStatus());
+        existingItem.setVegetarian(dto.isVegetarian());
+        existingItem.setSpicy(dto.isSpicy());
+        existingItem.setPopular(dto.isPopular());
+
+        return menuItemRepository.save(existingItem);
+    }
+
+    // --- SỬA ĐỔI TẠI ĐÂY (LOGIC XÓA) ---
+    @Transactional // Thêm Transactional
+    public void deleteMenuItem(Long id) {
+        MenuItem existingItem = menuItemRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy món ăn ID: " + id));
+
+        // LOGIC MỚI: Không xóa (delete), mà chuyển trạng thái (Soft Delete)
+        // Điều này ngăn ngừa lỗi Khóa Ngoại (Foreign Key)
+        // Đây chính là logic bạn yêu cầu: "không cho xoá nữa"
+        existingItem.setStatus(MenuItemStatus.DISCONTINUED);
+        menuItemRepository.save(existingItem);
+
+        // (Xóa dòng cũ: menuItemRepository.deleteById(id);)
+    }
+    // --- KẾT THÚC SỬA ĐỔI ---
+
+
+    /**
+     * Chuyển đổi MenuItem (Entity) sang MenuItemDTO
+     */
     private MenuItemDTO convertToDTO(MenuItem menuItem) {
         return new MenuItemDTO(
                 menuItem.getId(),
@@ -67,8 +118,10 @@ public class MenuService {
                 menuItem.getPrice(),
                 menuItem.isVegetarian(),
                 menuItem.isSpicy(),
-                menuItem.isPopular()
+                menuItem.isPopular(),
+                menuItem.getImageUrl(),
+                menuItem.getCategory(),
+                menuItem.getStatus()
         );
     }
-    // --- KẾT THÚC: THÊM PHƯƠNG THỨC TRỢ GIÚP MỚI ---
 }

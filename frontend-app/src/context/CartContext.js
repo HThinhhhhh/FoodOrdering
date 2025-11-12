@@ -50,12 +50,43 @@ export const CartProvider = ({ children }) => {
         console.log("Đã xóa giỏ hàng.");
     };
 
+    // --- BẮT ĐẦU: THÊM HÀM MỚI ---
+    /**
+     * Ghi đè giỏ hàng hiện tại bằng các món từ đơn hàng cũ.
+     * @param reorderItems - Danh sách item từ API (chỉ có menuItemId, quantity, note)
+     * @param allMenuItems - Toàn bộ danh sách menu (từ MenuContext)
+     */
+    const loadCartFromReorder = (reorderItems, allMenuItems) => {
+        // Tạo một Map để tra cứu thông tin món ăn đầy đủ (tên, giá...) một cách nhanh chóng
+        const menuMap = new Map(allMenuItems.map(item => [item.id, item]));
+
+        const newCartItems = [];
+        for (const reorderItem of reorderItems) {
+            // Lấy thông tin món ăn đầy đủ
+            const menuItem = menuMap.get(reorderItem.menuItemId);
+
+            // Chỉ thêm vào giỏ hàng nếu món đó vẫn còn tồn tại trong menu
+            if (menuItem) {
+                newCartItems.push({
+                    ...menuItem, // Gồm: id, name, price, description, etc.
+                    quantity: reorderItem.quantity,
+                    note: reorderItem.note || "" // Đảm bảo note là chuỗi, không phải null
+                });
+            }
+        }
+
+        setCartItems(newCartItems); // Ghi đè giỏ hàng hiện tại
+        console.log("Đã tải lại giỏ hàng từ đơn hàng cũ:", newCartItems);
+    };
+    // --- KẾT THÚC: THÊM HÀM MỚI ---
+
     const value = {
         cartItems,
         addToCart,
         removeFromCart,
         clearCart,
-        updateItemNote // <-- Thêm hàm mới
+        updateItemNote, // <-- Thêm hàm mới
+        loadCartFromReorder
     };
 
     return (

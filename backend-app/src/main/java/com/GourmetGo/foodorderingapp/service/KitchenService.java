@@ -1,15 +1,20 @@
 package com.GourmetGo.foodorderingapp.service;
 
 import com.GourmetGo.foodorderingapp.dto.CancelRequest;
+import com.GourmetGo.foodorderingapp.dto.NoteRequest;
+import com.GourmetGo.foodorderingapp.dto.OrderEditRequest;
 import com.GourmetGo.foodorderingapp.dto.UpdateStatusRequest;
 import com.GourmetGo.foodorderingapp.model.Order;
 import com.GourmetGo.foodorderingapp.model.OrderStatus;
 import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter; // <-- THÊM IMPORT
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -24,34 +29,53 @@ public class KitchenService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    // (Hàm getActiveOrders, updateOrderStatus, cancelOrder giữ nguyên)
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getActiveOrders() {
-        // (Logic này vẫn đúng)
-        List<Order> activeOrders = orderRepository.findByStatusNot(OrderStatus.COMPLETED);
+        List<OrderStatus> kitchenStatuses = List.of(
+                OrderStatus.RECEIVED,
+                OrderStatus.PREPARING,
+                OrderStatus.READY
+        );
+        List<Order> activeOrders = orderRepository.findByStatusInOrderByOrderTimeAsc(kitchenStatuses);
+
         return activeOrders.stream()
                 .map(this::convertOrderToDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public void updateOrderStatus(UpdateStatusRequest request) {
-        // (Logic này vẫn đúng)
+    public void updateOrderStatus(UpdateStatusRequest request, String role) {
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + request.getOrderId()));
 
-        order.setStatus(request.getNewStatus());
-        orderRepository.save(order);
+        OrderStatus oldStatus = order.getStatus();
+        OrderStatus newStatus = request.getNewStatus();
+
+        if (role.equals("ROLE_KITCHEN")) {
+            if (!((oldStatus == OrderStatus.RECEIVED && newStatus == OrderStatus.PREPARING) ||
+                    (oldStatus == OrderStatus.PREPARING && newStatus == OrderStatus.READY))) {
+                throw new AccessDeniedException("Bếp không có quyền chuyển trạng thái này.");
+            }
+        }
+
+        order.setStatus(newStatus);
+        Order savedOrder = orderRepository.save(order);
 
         String userSpecificTopic = "/topic/order-status/" + request.getOrderId();
-        System.out.println("Đang gửi cập nhật trạng thái (" + request.getNewStatus()
-                + ") tới kênh: " + userSpecificTopic);
+        Map<String, String> payload = new HashMap<>();
+        payload.put("newStatus", newStatus.toString());
+        messagingTemplate.convertAndSend(userSpecificTopic, payload);
 
-        messagingTemplate.convertAndSend(userSpecificTopic, Map.of("newStatus", request.getNewStatus().toString()));
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
+
+        if (oldStatus == OrderStatus.PENDING_CONFIRMATION && newStatus == OrderStatus.RECEIVED) {
+            messagingTemplate.convertAndSend("/topic/kitchen", convertOrderToDto(savedOrder));
+        }
     }
 
     @Transactional
-    public void cancelOrder(CancelRequest request) {
-        // (Logic này vẫn đúng)
+    public void cancelOrder(CancelRequest request, String role) {
         Order order = orderRepository.findById(request.getOrderId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + request.getOrderId()));
 
@@ -59,9 +83,23 @@ public class KitchenService {
             throw new IllegalStateException("Không thể hủy đơn hàng đã hoàn thành.");
         }
 
+        OrderStatus currentStatus = order.getStatus();
+
+        if (role.equals("ROLE_KITCHEN")) {
+            if (currentStatus != OrderStatus.RECEIVED && currentStatus != OrderStatus.PREPARING) {
+                throw new AccessDeniedException("Bếp chỉ có thể hủy đơn hàng ở trạng thái RECEIVED hoặc PREPARING.");
+            }
+        } else if (role.equals("ROLE_ADMIN") || role.equals("ROLE_EMPLOYEE")) {
+            if (currentStatus == OrderStatus.RECEIVED || currentStatus == OrderStatus.PREPARING) {
+                throw new AccessDeniedException("Không thể hủy khi Bếp đang chuẩn bị. Vui lòng yêu cầu Bếp hủy.");
+            }
+        } else {
+            throw new AccessDeniedException("Vai trò không xác định, không thể hủy.");
+        }
+
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancellationReason(request.getReason());
-        orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
 
         String userSpecificTopic = "/topic/order-status/" + request.getOrderId();
         Map<String, String> payload = Map.of(
@@ -69,15 +107,105 @@ public class KitchenService {
                 "reason", request.getReason()
         );
         messagingTemplate.convertAndSend(userSpecificTopic, payload);
+
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
     }
 
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllOrdersForAdmin(String statusFilter) {
+        List<Order> orders;
+        if (statusFilter != null && !statusFilter.isBlank() && !statusFilter.equals("ALL")) {
+            try {
+                OrderStatus status = OrderStatus.valueOf(statusFilter.toUpperCase());
+                orders = orderRepository.findByStatusOrderByOrderTimeDesc(status);
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        } else {
+            orders = orderRepository.findAllByOrderByOrderTimeDesc();
+        }
 
+        return orders.stream()
+                .map(this::convertOrderToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Order addKitchenNote(Long orderId, String note) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + orderId));
+
+        order.setKitchenNote(note);
+        Order savedOrder = orderRepository.save(order);
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order addEmployeeNote(Long orderId, String note, String username) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + orderId));
+
+        String formattedNote = (order.getEmployeeNote() == null ? "" : order.getEmployeeNote() + "\n")
+                + "[" + username + " - " + DateTimeFormatter.ofPattern("HH:mm dd/MM").format(LocalDateTime.now()) + "]: " + note;
+        order.setEmployeeNote(formattedNote);
+        Order savedOrder = orderRepository.save(order);
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order addDeliveryNote(Long orderId, String note) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + orderId));
+
+        order.setDeliveryNote(note);
+        Order savedOrder = orderRepository.save(order);
+
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
+
+        String userSpecificTopic = "/topic/order-status/" + orderId;
+        Map<String, String> payload = Map.of(
+                "newStatus", order.getStatus().toString(),
+                "deliveryNote", note
+        );
+        messagingTemplate.convertAndSend(userSpecificTopic, payload);
+        return savedOrder;
+    }
+
+    @Transactional
+    public Order editOrderDetails(Long orderId, OrderEditRequest dto) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy Order ID: " + orderId));
+
+        if (order.getStatus() != OrderStatus.PENDING_CONFIRMATION) {
+            throw new IllegalStateException("Không thể sửa đơn hàng đã được xác nhận.");
+        }
+
+        order.setDeliveryAddress(dto.getDeliveryAddress());
+        order.setShipperNote(dto.getShipperNote());
+
+        Order savedOrder = orderRepository.save(order);
+        messagingTemplate.convertAndSend("/topic/admin/order-updates", convertOrderToDto(savedOrder));
+        return savedOrder;
+    }
+
+    /**
+     * Chuyển đổi một Order (Entity) thành một DTO (Map) an toàn cho WebSocket/API.
+     * (PHIÊN BẢN ĐẦY ĐỦ NHẤT)
+     */
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
         orderDto.put("id", order.getId());
         orderDto.put("status", order.getStatus().toString());
         orderDto.put("pickupWindow", order.getPickupWindow());
-        orderDto.put("userId", order.getCustomer().getId()); // <-- SỬA: getUser() -> getCustomer()
+
+        // --- THÊM THÔNG TIN KHÁCH HÀNG ---
+        orderDto.put("userId", order.getCustomer().getId());
+        orderDto.put("customerName", order.getCustomer().getName());
+        orderDto.put("customerPhone", order.getCustomer().getPhoneNumber());
+        // --- KẾT THÚC THÊM ---
+
         orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
@@ -86,14 +214,19 @@ public class KitchenService {
         orderDto.put("vatAmount", order.getVatAmount());
         orderDto.put("shippingFee", order.getShippingFee());
         orderDto.put("grandTotal", order.getGrandTotal());
+        orderDto.put("isReviewed", order.isReviewed());
+        orderDto.put("deliveryRating", order.getDeliveryRating());
+        orderDto.put("deliveryComment", order.getDeliveryComment());
         orderDto.put("cancellationReason", order.getCancellationReason());
+        orderDto.put("kitchenNote", order.getKitchenNote());
+        orderDto.put("deliveryNote", order.getDeliveryNote());
+        orderDto.put("employeeNote", order.getEmployeeNote());
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("menuItemId", item.getMenuItem().getId());
             itemMap.put("quantity", item.getQuantity());
             itemMap.put("note", item.getNote());
-            // (Thêm tên món ăn để KDS/Order Status hiển thị)
             itemMap.put("name", item.getMenuItem().getName());
             return itemMap;
         }).collect(Collectors.toList());

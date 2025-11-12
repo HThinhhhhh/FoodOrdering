@@ -25,6 +25,8 @@ export const Menu = () => {
                 "is_vegetarian": isVegetarian ? true : undefined,
                 "is_spicy": isSpicy ? true : undefined,
             };
+            // API này (GET /api/menu) đã được MenuService sửa để
+            // chỉ trả về các món ON_SALE và TEMP_OUT_OF_STOCK
             const response = await axios.get(`${API_URL}/api/menu`, { params });
             setMenuItems(response.data);
         } catch (error) {
@@ -59,15 +61,27 @@ export const Menu = () => {
             {/* Danh sách món ăn */}
             {loading ? <p>Đang tải...</p> : (
                 <ul>
-                    {menuItems.map(item => (
-                        <li key={item.id}>
-                            {/* --- 2. SỬA ĐỊNH DẠNG TIỀN --- */}
-                            <strong>{item.name}</strong> - {formatCurrency(item.price)}
-                            {/* --- KẾT THÚC SỬA --- */}
-                            <p>{item.description}</p>
-                            <button onClick={() => addToCart(item)}>Thêm vào giỏ</button>
-                        </li>
-                    ))}
+                    {menuItems.map(item => {
+                        // --- 1. KIỂM TRA TRẠNG THÁI MÓN ĂN ---
+                        const isOutOfStock = item.status === 'TEMP_OUT_OF_STOCK';
+
+                        return (
+                            <li key={item.id} style={{ opacity: isOutOfStock ? 0.6 : 1 }}>
+                                {/* (Hiển thị hình ảnh nếu có) */}
+                                {item.imageUrl && (
+                                    <img src={item.imageUrl} alt={item.name} style={{width: '100px', height: '100px', objectFit: 'cover'}} />
+                                )}
+
+                                <strong>{item.name}</strong> - {formatCurrency(item.price)}
+                                <p>{item.description}</p>
+
+                                {/* --- 2. VÔ HIỆU HÓA NÚT BẤM --- */}
+                                <button onClick={() => addToCart(item)} disabled={isOutOfStock}>
+                                    {isOutOfStock ? "Tạm hết hàng" : "Thêm vào giỏ"}
+                                </button>
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </div>

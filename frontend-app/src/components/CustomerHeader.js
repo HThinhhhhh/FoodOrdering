@@ -46,12 +46,11 @@ export const CustomerHeader = () => {
                 </>
             );
         } else {
-            // Chưa đăng nhập Khách
+            // Chưa đăng nhập Khách (Đã sửa ở bước trước, chỉ giữ lại Đăng ký)
             return (
                 <>
                     <Link to="/" style={linkStyle}>Thực đơn</Link>
                     <Link to="/login" style={linkStyle}>Đăng nhập</Link>
-                    <Link to="/register" style={linkStyle}>Đăng ký</Link>
                 </>
             );
         }
@@ -60,7 +59,23 @@ export const CustomerHeader = () => {
     const renderLogoutButton = () => {
         // Chỉ hiện nút logout nếu là DINER
         if (currentUser && currentUser.role === 'DINER') {
-            return <button onClick={handleLogout} style={buttonStyle}>Đăng xuất ({currentUser.username})</button>;
+            return (
+                // --- BẮT ĐẦU SỬA ĐỔI ---
+                <div>
+                    {/* Thêm Link "Đổi mật khẩu" */}
+                    <Link
+                        to="/change-password"
+                        style={{...linkStyle, fontSize: '0.9em', color: 'blue', textDecoration: 'underline'}}
+                    >
+                        Đổi mật khẩu
+                    </Link>
+
+                    <button onClick={handleLogout} style={buttonStyle}>
+                        Đăng xuất ({currentUser.username})
+                    </button>
+                </div>
+                // --- KẾT THÚC SỬA ĐỔI ---
+            );
         }
         return null;
     };

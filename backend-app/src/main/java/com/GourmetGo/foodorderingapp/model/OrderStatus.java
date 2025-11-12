@@ -2,7 +2,12 @@ package com.GourmetGo.foodorderingapp.model;
 
 public enum OrderStatus {
     /**
-     * Đã nhận đơn, chờ bếp xác nhận.
+     * MỚI: Đơn hàng vừa vào hệ thống, chờ Admin/Nhân viên xác nhận
+     */
+    PENDING_CONFIRMATION,
+
+    /**
+     * Đã nhận đơn, Bếp thấy và bắt đầu làm.
      */
     RECEIVED,
 
@@ -12,9 +17,14 @@ public enum OrderStatus {
     PREPARING,
 
     /**
-     * Món đã sẵn sàng để lấy.
+     * Món đã sẵn sàng để lấy/giao.
      */
     READY,
+
+    /**
+     * MỚI: Đơn hàng đang trên đường giao
+     */
+    DELIVERING,
 
     /**
      * Khách đã lấy hàng (hoàn thành)
@@ -22,7 +32,7 @@ public enum OrderStatus {
     COMPLETED,
 
     /**
-     * Đơn hàng đã bị hủy (bởi bếp)
+     * Đơn hàng đã bị hủy (bởi bếp hoặc admin)
      */
     CANCELLED
 }

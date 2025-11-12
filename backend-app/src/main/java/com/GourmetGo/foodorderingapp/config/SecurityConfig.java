@@ -8,7 +8,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -21,17 +21,11 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Bean mã hóa mật khẩu (chung)
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance();
+        return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Cấu hình CORS chung (chung)
-     */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -44,42 +38,35 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * BỘ LỌC BẢO MẬT 1: Dành cho KHÁCH HÀNG (Customer)
-     * Ưu tiên (Order) 1
-     * Chỉ áp dụng cho các API của Khách hàng
-     */
     @Bean
-    @Order(1) // Ưu tiên chạy trước
+    @Order(1)
     public SecurityFilterChain customerApiFilterChain(
             HttpSecurity http,
             @Qualifier("customerUserDetailsService") UserDetailsService customerUserDetailsService
     ) throws Exception {
 
         http
-                // Chỉ áp dụng cho các URL API của Khách hàng
                 .securityMatcher("/api/auth/customer/**", "/api/orders/**", "/api/reviews/**", "/api/payments/mock", "/api/users/me")
                 .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/auth/customer/**").permitAll() // Đăng nhập/Đăng ký của Khách
+                        .requestMatchers(HttpMethod.POST, "/api/auth/customer/register").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/customer/me").hasRole("DINER")
+                        .requestMatchers(HttpMethod.POST, "/api/auth/customer/change-password").hasRole("DINER")
                         .requestMatchers("/api/orders/**").hasRole("DINER")
                         .requestMatchers("/api/reviews/**").hasRole("DINER")
                         .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER")
                         .requestMatchers(HttpMethod.PUT, "/api/users/me").hasRole("DINER")
                         .anyRequest().authenticated()
                 )
-                .userDetailsService(customerUserDetailsService) // Chỉ dùng dịch vụ tìm Customer
-
-                // Cấu hình formLogin cho Khách (dùng SĐT)
+                .userDetailsService(customerUserDetailsService)
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/customer/login")
-                        .usernameParameter("phoneNumber") // Báo cho Spring biết tên trường SĐT
+                        .usernameParameter("phoneNumber")
                         .passwordParameter("password")
-                        .successHandler((req, res, auth) -> res.setStatus(200)) // 200 OK
-                        .failureHandler((req, res, ex) -> res.setStatus(401))   // 401 Lỗi
+                        .successHandler((req, res, auth) -> res.setStatus(200))
+                        .failureHandler((req, res, ex) -> res.setStatus(401))
                 )
-                // Cấu hình logout cho Khách
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/customer/logout")
                         .logoutSuccessHandler((req, res, auth) -> res.setStatus(200))
@@ -88,13 +75,9 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * BỘ LỌC BẢO MẬT 2: Dành cho NHÂN VIÊN (Employee) & API CÔNG KHAI (Public)
-     * Ưu tiên (Order) 2
-     * Áp dụng cho TẤT CẢ các API còn lại
-     */
+
     @Bean
-    @Order(2) // Chạy sau
+    @Order(2)
     public SecurityFilterChain employeeApiAndPublicFilterChain(
             HttpSecurity http,
             @Qualifier("employeeUserDetailsService") UserDetailsService employeeUserDetailsService
@@ -106,31 +89,42 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // === PUBLIC ===
                         .requestMatchers(HttpMethod.GET, "/api/menu").permitAll()
-                        .requestMatchers("/api/auth/employee/**").permitAll() // Đăng nhập của Bếp/Admin
-                        .requestMatchers("/api/auth/me").permitAll() // (API /me chung - Tạm thời)
+                        .requestMatchers("/api/auth/employee/**").permitAll()
+                        .requestMatchers("/api/auth/me").permitAll()
+
+                        // --- SỬA ĐỔI QUAN TRỌNG TẠI ĐÂY ---
 
                         // === KITCHEN ===
-                        .requestMatchers("/api/kitchen/**").hasRole("KITCHEN")
+                        // Bếp và Admin có thể xem KDS và ghi chú bếp
+                        .requestMatchers("/api/kitchen/active-orders").hasAnyRole("KITCHEN", "ADMIN")
+                        .requestMatchers("/api/kitchen/order/{id}/kitchen-note").hasAnyRole("KITCHEN", "ADMIN")
+                        // Cả 3 vai trò đều có thể Hủy (vd: Bếp hủy, NV/Admin hủy từ trang QL)
+                        .requestMatchers("/api/kitchen/cancel-order").hasAnyRole("KITCHEN", "ADMIN", "EMPLOYEE")
 
-                        // === ADMIN ===
-                        // (Thêm /api/admin/** khi bạn phát triển)
+                        // === ADMIN (QUY TẮC CỤ THỂ TRƯỚC) ===
+                        // Chỉ Admin được quản lý Menu
+                        .requestMatchers("/api/admin/menu/**").hasRole("ADMIN")
+
+                        // === EMPLOYEE & ADMIN (QUY TẮC CHUNG SAU) ===
+                        // Cả Admin và Employee đều được quản lý Đơn hàng
+                        .requestMatchers("/api/admin/orders/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // (Xóa quy tắc .requestMatchers("/api/admin/**").hasRole("ADMIN") cũ)
+                        // --- KẾT THÚC SỬA ĐỔI ---
 
                         // === WEBSOCKET ===
                         .requestMatchers("/ws/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
-                .userDetailsService(employeeUserDetailsService) // Chỉ dùng dịch vụ tìm Employee
-
-                // Cấu hình formLogin cho Bếp (dùng Username)
+                .userDetailsService(employeeUserDetailsService)
                 .formLogin(form -> form
                         .loginProcessingUrl("/api/auth/employee/login")
                         .usernameParameter("username")
                         .passwordParameter("password")
-                        .successHandler((req, res, auth) -> res.setStatus(200)) // 200 OK
-                        .failureHandler((req, res, ex) -> res.setStatus(401))   // 401 Lỗi
+                        .successHandler((req, res, auth) -> res.setStatus(200))
+                        .failureHandler((req, res, ex) -> res.setStatus(401))
                 )
-                // Cấu hình logout cho Bếp
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/employee/logout")
                         .logoutSuccessHandler((req, res, auth) -> res.setStatus(200))

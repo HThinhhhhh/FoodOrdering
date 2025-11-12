@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.GourmetGo.foodorderingapp.dto.OrderRequest;
+import com.GourmetGo.foodorderingapp.dto.ReOrderItemDTO; // <-- Thêm import
 import com.GourmetGo.foodorderingapp.model.Order;
 import com.GourmetGo.foodorderingapp.repository.OrderRepository;
 import jakarta.annotation.PostConstruct;
@@ -47,10 +48,29 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getOrdersForUser(Long customerId) { // <-- SỬA: userId -> customerId
-        List<Order> orders = orderRepository.findByCustomerIdOrderByOrderTimeDesc(customerId); // <-- SỬA
+    public List<Map<String, Object>> getOrdersForUser(Long customerId) {
+        List<Order> orders = orderRepository.findByCustomerIdOrderByOrderTimeDesc(customerId);
         return orders.stream()
                 .map(this::convertOrderToDto)
+                .collect(Collectors.toList());
+    }
+
+    // (Hàm getReOrderData giữ nguyên)
+    @Transactional(readOnly = true)
+    public List<ReOrderItemDTO> getReOrderData(Long orderId, Long customerId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng ID: " + orderId));
+
+        if (!order.getCustomer().getId().equals(customerId)) {
+            throw new SecurityException("Bạn không có quyền đặt lại đơn hàng này.");
+        }
+
+        return order.getItems().stream()
+                .map(item -> new ReOrderItemDTO(
+                        item.getMenuItem().getId(),
+                        item.getQuantity(),
+                        item.getNote()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +82,13 @@ public class OrderService {
         orderDto.put("id", order.getId());
         orderDto.put("status", order.getStatus().toString());
         orderDto.put("pickupWindow", order.getPickupWindow());
-        orderDto.put("userId", order.getCustomer().getId()); // <-- SỬA: getUser() -> getCustomer()
+
+        // --- THÊM THÔNG TIN KHÁCH HÀNG ---
+        orderDto.put("userId", order.getCustomer().getId());
+        orderDto.put("customerName", order.getCustomer().getName());
+        orderDto.put("customerPhone", order.getCustomer().getPhoneNumber());
+        // --- KẾT THÚC THÊM ---
+
         orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
@@ -75,6 +101,9 @@ public class OrderService {
         orderDto.put("deliveryRating", order.getDeliveryRating());
         orderDto.put("deliveryComment", order.getDeliveryComment());
         orderDto.put("cancellationReason", order.getCancellationReason());
+        orderDto.put("kitchenNote", order.getKitchenNote());
+        orderDto.put("deliveryNote", order.getDeliveryNote());
+        orderDto.put("employeeNote", order.getEmployeeNote());
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();

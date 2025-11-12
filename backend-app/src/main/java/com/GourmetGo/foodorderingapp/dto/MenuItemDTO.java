@@ -1,31 +1,28 @@
 package com.GourmetGo.foodorderingapp.dto;
-
-// --- BẮT ĐẦU: THÊM IMPORT MỚI ---
 import java.math.BigDecimal;
-// --- KẾT THÚC: THÊM IMPORT MỚI ---
+import com.GourmetGo.foodorderingapp.model.MenuItemCategory;
+import com.GourmetGo.foodorderingapp.model.MenuItemStatus;
 
 public class MenuItemDTO {
 
     private Long id;
     private String name;
     private String description;
-
-    // --- SỬA ĐỔI 1: Thay đổi kiểu dữ liệu ---
-    // Từ: private Double price;
-    // Thành:
     private BigDecimal price;
-
     private boolean isVegetarian;
     private boolean isSpicy;
     private boolean isPopular;
 
-    public MenuItemDTO() {
-    }
+    // --- THÊM CÁC TRƯỜNG MỚI ---
+    private String imageUrl;
+    private MenuItemCategory category;
+    private MenuItemStatus status;
+    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
 
-    // --- SỬA ĐỔI 2: Thay đổi kiểu trong Constructor ---
-    // Từ: public MenuItemDTO(..., Double price, ...)
-    // Thành:
-    public MenuItemDTO(Long id, String name, String description, BigDecimal price, boolean isVegetarian, boolean isSpicy, boolean isPopular) {
+    // --- SỬA ĐỔI CONSTRUCTOR ---
+    public MenuItemDTO(Long id, String name, String description, BigDecimal price,
+                       boolean isVegetarian, boolean isSpicy, boolean isPopular,
+                       String imageUrl, MenuItemCategory category, MenuItemStatus status) { // Thêm 3 tham số
         this.id = id;
         this.name = name;
         this.description = description;
@@ -33,6 +30,10 @@ public class MenuItemDTO {
         this.isVegetarian = isVegetarian;
         this.isSpicy = isSpicy;
         this.isPopular = isPopular;
+        // Gán các giá trị mới
+        this.imageUrl = imageUrl;
+        this.category = category;
+        this.status = status;
     }
 
     // --- SỬA ĐỔI 3 & 4: Thay đổi kiểu trong Getter và Setter ---
@@ -92,5 +93,29 @@ public class MenuItemDTO {
 
     public void setPopular(boolean popular) {
         isPopular = popular;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public MenuItemCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(MenuItemCategory category) {
+        this.category = category;
+    }
+
+    public MenuItemStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(MenuItemStatus status) {
+        this.status = status;
     }
 }

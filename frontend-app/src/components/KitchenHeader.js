@@ -28,31 +28,51 @@ const buttonStyle = {
 };
 
 export const KitchenHeader = () => {
-    const { currentUser, logout } = useAuth(); // Dùng hàm logout chung
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
-        navigate('/kitchen/login'); // Đăng xuất bếp về login bếp
+        navigate('/kitchen/login');
     };
 
     const renderLinks = () => {
-        // Chỉ render link cho Bếp
-        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN')) {
+        if (!currentUser) {
+            return <Link to="/kitchen/login" style={linkStyle}>Đăng nhập Bếp/Admin/NV</Link>;
+        }
+
+        // Tất cả nhân viên đã đăng nhập
+        if (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN' || currentUser.role === 'EMPLOYEE') {
             return (
                 <>
-                    <Link to="/kitchen" style={linkStyle}>Màn hình Bếp</Link>
-                    {/* (Bạn có thể thêm Link '/admin' ở đây nếu currentUser.role === 'ADMIN') */}
+                    {/* Link cho Bếp (KITCHEN, ADMIN) */}
+                    {(currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN') && (
+                        <Link to="/kitchen" style={linkStyle}>Màn hình Bếp</Link>
+                    )}
+
+                    {/* Link cho Quản lý Đơn hàng (EMPLOYEE, ADMIN) */}
+                    {(currentUser.role === 'EMPLOYEE' || currentUser.role === 'ADMIN') && (
+                        <Link to="/kitchen/admin/orders" style={{...linkStyle, color: 'red'}}>
+                            Quản lý Đơn hàng
+                        </Link>
+                    )}
+
+                    {/* Link cho Quản lý Menu (ADMIN only) */}
+                    {currentUser.role === 'ADMIN' && (
+                        <Link to="/kitchen/admin/menu" style={{...linkStyle, color: 'red'}}>
+                            Quản lý Menu
+                        </Link>
+                    )}
                 </>
             );
-        } else {
-            return <Link to="/kitchen/login" style={linkStyle}>Đăng nhập Bếp/Admin</Link>;
         }
+
+        // (Nếu là DINER, AuthContext sẽ tự động điều hướng, nhưng để dự phòng)
+        return null;
     };
 
     const renderLogoutButton = () => {
-        // Chỉ hiện nút logout nếu là KITCHEN hoặc ADMIN
-        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN')) {
+        if (currentUser && (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN' || currentUser.role === 'EMPLOYEE')) {
             return <button onClick={handleLogout} style={buttonStyle}>Đăng xuất ({currentUser.username})</button>;
         }
         return null;

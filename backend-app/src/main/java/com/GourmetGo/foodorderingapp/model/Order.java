@@ -23,12 +23,10 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- THAY ĐỔI LIÊN KẾT ---
     @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false) // Đổi từ user_id
-    @JsonBackReference("customer-order") // Đổi từ user-order
-    private Customer customer; // Đổi từ User
-    // --- KẾT THÚC THAY ĐỔI ---
+    @JoinColumn(name = "customer_id", nullable = false)
+    @JsonBackReference("customer-order")
+    private Customer customer;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("order-item")
@@ -46,7 +44,7 @@ public class Order {
     @Column(nullable = true)
     private String deliveryAddress;
     @Column(nullable = true)
-    private String shipperNote;
+    private String shipperNote; // Ghi chú của Khách hàng cho Shipper
     @Column(nullable = false)
     private String paymentMethod;
     @Column(nullable = false)
@@ -65,4 +63,18 @@ public class Order {
     private String deliveryComment;
     @Column(nullable = true, length = 500)
     private String cancellationReason;
+
+    /** Ghi chú nội bộ của Bếp (khách hàng không thấy) */
+    @Column(nullable = true, length = 500)
+    private String kitchenNote;
+
+    /** Ghi chú giao hàng (vd: Tên Shipper, SĐT) - (Khách hàng CÓ THỂ thấy) */
+    @Column(nullable = true, length = 500)
+    private String deliveryNote;
+
+    // --- THÊM TRƯỜNG MỚI ---
+    /** Ghi chú của Nhân viên/Admin (khách hàng không thấy) */
+    @Column(nullable = true, length = 500)
+    private String employeeNote;
+    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
 }
