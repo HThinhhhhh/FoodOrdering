@@ -1,0 +1,39 @@
+.footer {
+    background-color: #343a40; /* Màu nền tối */
+    color: #f8f9fa; /* Chữ màu sáng */
+    padding: 30px 20px;
+    margin-top: 30px;
+    border-top: 3px solid var(--primary-color, #FF6600);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.column {
+    font-size: 0.95em;
+    color: #ccc;
+}
+.column h4 {
+    color: #ffffff;
+    font-size: 1.2em;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+.column p {
+    margin: 5px 0;
+    line-height: 1.6;
+}
+
+.copyright {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #555;
+    font-size: 0.9em;
+    color: #aaa;
+}

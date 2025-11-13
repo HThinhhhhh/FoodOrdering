@@ -1,0 +1,78 @@
+.formContainer {
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.formContainer h2 {
+    margin-top: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.formGroup {
+    margin-bottom: 15px;
+}
+.fullWidth {
+    grid-column: 1 / -1; /* Chiếm toàn bộ chiều rộng */
+}
+
+.label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.input,
+.textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.textarea {
+    min-height: 80px;
+    font-family: inherit;
+}
+
+.button {
+    padding: 12px 20px;
+    background: var(--success-color, green);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.button:hover {
+    background: var(--success-hover, darkgreen);
+}
+.button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.errorText {
+    color: red;
+    margin-top: 15px;
+}
+.successText {
+    color: green;
+    margin-top: 15px;
+    font-weight: bold;
+}

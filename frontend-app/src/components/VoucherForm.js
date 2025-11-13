@@ -3,18 +3,15 @@ import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 import { formatCurrency } from '../utils/formatCurrency';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './AdminForm.module.css';
+
 const API_URL = process.env.REACT_APP_API_URL;
 
-const styles = {
-    form: { maxWidth: '700px', margin: 'auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' },
-    formGroup: { marginBottom: '15px' },
-    label: { display: 'block', marginBottom: '5px', fontWeight: 'bold' },
-    input: { width: '100%', padding: '8px', boxSizing: 'border-box' },
-    select: { width: '100%', padding: '8px', boxSizing: 'border-box' },
-    button: { padding: '10px 20px', background: 'blue', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }
-};
+// --- 2. XÓA 'const styles = { ... }' ---
+// (Đã xóa)
 
-// Hàm chuyển đổi sang định dạng datetime-local (yyyy-MM-ddThh:mm)
+// (Hàm toDatetimeLocal giữ nguyên)
 const toDatetimeLocal = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -23,6 +20,8 @@ const toDatetimeLocal = (isoString) => {
 };
 
 export const VoucherForm = () => {
+    // (State và logic (useEffect, handleChange, handleSubmit) giữ nguyên)
+    // ...
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = Boolean(id);
@@ -32,9 +31,9 @@ export const VoucherForm = () => {
         description: '',
         discountType: 'FIXED_AMOUNT',
         discountValue: 0,
-        maxDiscountAmount: 0, // <-- THÊM MỚI
+        maxDiscountAmount: 0,
         minimumSpend: 0,
-        usageLimit: '', // Dùng chuỗi rỗng cho dễ
+        usageLimit: '',
         startDate: toDatetimeLocal(new Date().toISOString()),
         endDate: toDatetimeLocal(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()),
         isActive: true
@@ -54,7 +53,7 @@ export const VoucherForm = () => {
                         endDate: toDatetimeLocal(voucher.endDate),
                         usageLimit: voucher.usageLimit === null ? '' : voucher.usageLimit,
                         minimumSpend: voucher.minimumSpend === null ? 0 : voucher.minimumSpend,
-                        maxDiscountAmount: voucher.maxDiscountAmount === null ? 0 : voucher.maxDiscountAmount // <-- THÊM MỚI
+                        maxDiscountAmount: voucher.maxDiscountAmount === null ? 0 : voucher.maxDiscountAmount
                     });
                     setLoading(false);
                 })
@@ -77,17 +76,14 @@ export const VoucherForm = () => {
 
         try {
             const isPercentage = formData.discountType === 'PERCENTAGE';
-
             const payload = {
                 ...formData,
                 discountValue: parseFloat(formData.discountValue),
                 minimumSpend: formData.minimumSpend ? parseFloat(formData.minimumSpend) : null,
                 usageLimit: formData.usageLimit ? parseInt(formData.usageLimit, 10) : null,
-                // --- LOGIC MỚI ---
                 maxDiscountAmount: (isPercentage && formData.maxDiscountAmount > 0)
                     ? parseFloat(formData.maxDiscountAmount)
                     : null,
-                // --- KẾT THÚC ---
                 startDate: new Date(formData.startDate).toISOString(),
                 endDate: new Date(formData.endDate).toISOString()
             };
@@ -107,69 +103,69 @@ export const VoucherForm = () => {
             setLoading(false);
         }
     };
+    // ...
 
     if (loading && isEditing) return <p>Đang tải dữ liệu voucher...</p>;
 
     return (
-        <form style={styles.form} onSubmit={handleSubmit}>
+        // --- 3. SỬ DỤNG className ---
+        <form className={styles.formContainer} onSubmit={handleSubmit}>
             <h2>{isEditing ? 'Sửa Voucher' : 'Tạo Voucher Mới'}</h2>
 
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Mã Voucher:</label>
-                <input type="text" name="code" value={formData.code} onChange={handleChange} style={styles.input} required />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Mã Voucher:</label>
+                <input type="text" name="code" value={formData.code} onChange={handleChange} className={styles.input} required />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Mô tả:</label>
-                <input type="text" name="description" value={formData.description} onChange={handleChange} style={styles.input} required />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Mô tả:</label>
+                <input type="text" name="description" value={formData.description} onChange={handleChange} className={styles.input} required />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Loại Giảm giá:</label>
-                <select name="discountType" value={formData.discountType} onChange={handleChange} style={styles.select}>
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Loại Giảm giá:</label>
+                <select name="discountType" value={formData.discountType} onChange={handleChange} className={styles.select}>
                     <option value="FIXED_AMOUNT">Giảm Tiền Cố định (VNĐ)</option>
                     <option value="PERCENTAGE">Giảm Theo Phần trăm (%)</option>
                 </select>
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Giá trị Giảm:</label>
-                <input type="number" name="discountValue" value={formData.discountValue} onChange={handleChange} style={styles.input} required min="0" />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Giá trị Giảm:</label>
+                <input type="number" name="discountValue" value={formData.discountValue} onChange={handleChange} className={styles.input} required min="0" />
                 <small>{formData.discountType === 'PERCENTAGE' ? 'Nhập số % (Vd: 20 cho 20%)' : `Nhập số tiền (Vd: 30000 cho ${formatCurrency(30000)})`}</small>
             </div>
 
-            {/* --- THÊM TRƯỜNG MỚI (HIỂN THỊ CÓ ĐIỀU KIỆN) --- */}
             {formData.discountType === 'PERCENTAGE' && (
-                <div style={styles.formGroup}>
-                    <label style={styles.label}>Giảm Tối Đa (VNĐ):</label>
-                    <input type="number" name="maxDiscountAmount" value={formData.maxDiscountAmount} onChange={handleChange} style={styles.input} min="0" placeholder="Bỏ trống nếu không giới hạn" />
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Giảm Tối Đa (VNĐ):</label>
+                    <input type="number" name="maxDiscountAmount" value={formData.maxDiscountAmount} onChange={handleChange} className={styles.input} min="0" placeholder="Bỏ trống nếu không giới hạn" />
                 </div>
             )}
-            {/* --- KẾT THÚC THÊM MỚI --- */}
 
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Đơn hàng Tối thiểu (VNĐ):</label>
-                <input type="number" name="minimumSpend" value={formData.minimumSpend} onChange={handleChange} style={styles.input} min="0" placeholder="Bỏ trống hoặc 0 nếu không yêu cầu" />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Đơn hàng Tối thiểu (VNĐ):</label>
+                <input type="number" name="minimumSpend" value={formData.minimumSpend} onChange={handleChange} className={styles.input} min="0" placeholder="Bỏ trống hoặc 0 nếu không yêu cầu" />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Tổng lượt Sử dụng (Usage Limit):</label>
-                <input type="number" name="usageLimit" value={formData.usageLimit || ''} onChange={handleChange} style={styles.input} min="0" placeholder="Bỏ trống nếu không giới hạn" />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Tổng lượt Sử dụng (Usage Limit):</label>
+                <input type="number" name="usageLimit" value={formData.usageLimit || ''} onChange={handleChange} className={styles.input} min="0" placeholder="Bỏ trống nếu không giới hạn" />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Ngày Bắt đầu:</label>
-                <input type="datetime-local" name="startDate" value={formData.startDate} onChange={handleChange} style={styles.input} required />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Ngày Bắt đầu:</label>
+                <input type="datetime-local" name="startDate" value={formData.startDate} onChange={handleChange} className={styles.input} required />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>Ngày Kết thúc:</label>
-                <input type="datetime-local" name="endDate" value={formData.endDate} onChange={handleChange} style={styles.input} required />
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Ngày Kết thúc:</label>
+                <input type="datetime-local" name="endDate" value={formData.endDate} onChange={handleChange} className={styles.input} required />
             </div>
-            <div style={styles.formGroup}>
-                <label style={styles.label}>
+            <div className={styles.formGroup}>
+                <label className={styles.checkboxGroup} style={{padding: 0, background: 'none', border: 'none'}}>
                     <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} />
                     Kích hoạt?
                 </label>
             </div>
 
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {error && <p className={styles.errorText}>{error}</p>}
 
-            <button type="submit" style={styles.button} disabled={loading}>
+            <button type="submit" className={styles.button} disabled={loading}>
                 {loading ? 'Đang lưu...' : (isEditing ? 'Lưu thay đổi' : 'Tạo Voucher')}
             </button>
         </form>

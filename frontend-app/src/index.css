@@ -1,0 +1,39 @@
+/* --- 1. ĐỊNH NGHĨA BIẾN CSS (BẢNG MÀU) --- */
+:root {
+    --primary-color: #FF6600; /* Màu cam thương hiệu */
+    --primary-hover: #e65c00;
+    --secondary-color: #007bff; /* Màu xanh dương cho link/thông tin */
+    --success-color: #28a745;  /* Màu xanh lá cho "Thêm", "Thanh toán" */
+    --success-hover: #218838;
+    --danger-color: #dc3545;   /* Màu đỏ cho "Xóa", "Hủy" */
+    --text-primary: #212529;
+    --text-secondary: #555;
+    --bg-color: #f4f7f6;     /* Màu nền xám nhạt */
+    --card-bg: #ffffff;
+    --border-color: #ddd;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    --border-radius: 8px;
+}
+/* --- HẾT BIẾN CSS --- */
+
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    background-color: var(--bg-color); /* Sử dụng biến màu nền */
+    color: var(--text-primary);
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+* {
+    box-sizing: border-box;
+}

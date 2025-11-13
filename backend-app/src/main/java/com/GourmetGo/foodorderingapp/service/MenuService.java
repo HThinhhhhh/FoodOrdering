@@ -47,21 +47,20 @@ public class MenuService {
         System.out.println("Đang thực hiện query CSDL để lấy menu (cho khách)...");
         List<MenuItem> menuItems;
 
-        // Logic lọc của bạn (giữ nguyên)
+        MenuItemStatus excludedStatus = MenuItemStatus.DISCONTINUED;
+
         if (isVegetarian != null && isSpicy != null) {
-            menuItems = menuItemRepository.findByIsVegetarianAndIsSpicy(isVegetarian, isSpicy);
+            menuItems = menuItemRepository.findByVegetarianAndSpicyAndStatusNot(isVegetarian, isSpicy, excludedStatus);
         } else if (isVegetarian != null) {
-            menuItems = menuItemRepository.findByIsVegetarian(isVegetarian);
+            menuItems = menuItemRepository.findByVegetarianAndStatusNot(isVegetarian, excludedStatus);
         } else if (isSpicy != null) {
-            menuItems = menuItemRepository.findByIsSpicy(isSpicy);
+            menuItems = menuItemRepository.findBySpicyAndStatusNot(isSpicy, excludedStatus);
         } else {
-            menuItems = menuItemRepository.findAll();
+            menuItems = menuItemRepository.findByStatusNot(excludedStatus);
         }
 
-        // Lọc các món đã Ngừng bán (DISCONTINUED)
         return menuItems.stream()
-                .filter(item -> item.getStatus() != MenuItemStatus.DISCONTINUED)
-                .map(this::convertToDTO) // Gọi hàm DTO đã cập nhật
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 

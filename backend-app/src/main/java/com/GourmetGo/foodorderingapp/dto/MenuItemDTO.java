@@ -14,9 +14,9 @@ public class MenuItemDTO {
     private String name;
     private String description;
     private BigDecimal price;
-    private boolean isVegetarian;
-    private boolean isSpicy;
-    private boolean isPopular;
+    private boolean vegetarian;
+    private boolean spicy;
+    private boolean popular;
 
     private String imageUrl;
     private MenuItemCategory category;

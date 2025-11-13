@@ -1,0 +1,62 @@
+.navStyle {
+    padding: 10px 20px;
+    background: #ffffff; /* Đổi sang màu trắng */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Style link chung */
+.linkStyle {
+    margin-right: 15px;
+    text-decoration: none;
+    color: #333;
+    font-weight: bold;
+    transition: color 0.2s;
+    padding: 5px;
+    border-radius: 4px;
+}
+.linkStyle:hover {
+    background-color: #f0f0f0;
+}
+
+/* Style cho các link Admin (dùng lại màu) */
+.adminDashboardLink {
+    composes: linkStyle; /* Kế thừa từ .linkStyle */
+    color: green !important;
+    font-weight: bold;
+}
+.adminOrderLink {
+    composes: linkStyle;
+    color: red !important;
+}
+.adminMenuLink {
+    composes: linkStyle;
+    color: red !important;
+}
+.adminRevenueLink {
+    composes: linkStyle;
+    color: blue !important;
+}
+.adminVoucherLink {
+    composes: linkStyle;
+    color: purple !important;
+}
+.adminReviewLink {
+    composes: linkStyle;
+    color: orange !important;
+}
+
+
+/* Nút Đăng xuất */
+.buttonStyle {
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #e74c3c;
+    text-decoration: underline;
+    font-size: 1em;
+    font-family: inherit;
+    font-weight: bold;
+}

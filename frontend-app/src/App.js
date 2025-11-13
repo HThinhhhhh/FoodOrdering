@@ -1,5 +1,10 @@
 import React from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
+
+// --- THÊM IMPORT CSS NÀY ---
+import './App.css';
+// --- KẾT THÚC THÊM ---
+
 import { Menu } from './components/Menu';
 import { Cart } from './components/Cart';
 import { Checkout } from './components/Checkout';
@@ -25,34 +30,50 @@ import { VoucherForm } from './components/VoucherForm';
 import { OrderReviewPage } from './components/OrderReviewPage';
 import { AdminReviewPage } from './components/AdminReviewPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminSettingsPage } from './components/AdminSettingsPage';
+import { CustomerFooter } from './components/CustomerFooter';
+import { CoverImageBanner } from './components/CoverImageBanner';
+
+import { SettingsProvider } from './context/SettingsContext';
+
+
 
 // (CustomerLayout, KitchenLayout, DinerPage giữ nguyên)
 const CustomerLayout = () => (
-    <div>
-        <CustomerHeader />
-        <hr />
-        <Outlet />
-    </div>
+    // Bọc layout khách hàng trong SettingsProvider
+    <SettingsProvider>
+        <div>
+            <CustomerHeader />
+            <hr className="app-divider" />
+            <Outlet />
+            {/* Thêm Footer */}
+            <CustomerFooter />
+        </div>
+    </SettingsProvider>
 );
 
 const KitchenLayout = () => (
     <div>
         <KitchenHeader />
-        <hr />
+        {/* Sửa <hr /> thành className */}
+        <hr className="app-divider" />
         <Outlet />
     </div>
 );
 
 function DinerPage() {
     return (
-        <div style={{ display: 'flex', gap: '20px', padding: '10px' }}>
-            <div style={{ flex: 2 }}>
-                <Menu />
+        <>
+            <CoverImageBanner />
+            <div className="diner-layout">
+                <div className="diner-menu-column">
+                    <Menu />
+                </div>
+                <div className="diner-cart-column">
+                    <Cart />
+                </div>
             </div>
-            <div style={{ flex: 1 }}>
-                <Cart />
-            </div>
-        </div>
+        </>
     );
 }
 
@@ -61,7 +82,6 @@ function App() {
         <Routes>
             {/* Bố cục Khách hàng (Giao diện A) */}
             <Route path="/*" element={<CustomerLayout />}>
-                {/* ... (Các route khách hàng giữ nguyên) ... */}
                 <Route index element={<DinerPage />} />
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
@@ -87,8 +107,7 @@ function App() {
                 />
             </Route>
 
-            {/* --- SỬA ĐỔI: Bố cục Bếp (Giao diện B) --- */}
-            {/* Đổi: path="/kitchen/*" -> path="/restaurant/*" */}
+            {/* Bố cục Bếp (Giao diện B) */}
             <Route path="/restaurant/*" element={<KitchenLayout />}>
                 <Route path="login" element={<KitchenLoginPage />} />
 
@@ -97,14 +116,11 @@ function App() {
                     element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
                 />
 
-                {/* --- THÊM ROUTE DASHBOARD TẠI ĐÂY --- */}
+                {/* (Tất cả các route admin giữ nguyên) */}
                 <Route
                     path="admin/dashboard"
                     element={<AdminRoute><AdminDashboard /></AdminRoute>}
                 />
-                {/* --- KẾT THÚC THÊM --- */}
-
-                {/* (Các route con giữ nguyên cấu trúc tương đối) */}
                 <Route
                     path="admin/menu"
                     element={<AdminRoute><AdminMenuPage /></AdminRoute>}
@@ -117,7 +133,6 @@ function App() {
                     path="admin/menu/edit/:id"
                     element={<AdminRoute><MenuItemForm /></AdminRoute>}
                 />
-
                 <Route
                     path="admin/orders"
                     element={<AdminRoute><AdminOrderPage /></AdminRoute>}
@@ -126,12 +141,10 @@ function App() {
                     path="admin/order/edit/:id"
                     element={<AdminRoute><OrderEditPage /></AdminRoute>}
                 />
-
                 <Route
                     path="admin/revenue"
                     element={<AdminRoute><AdminRevenuePage /></AdminRoute>}
                 />
-
                 <Route
                     path="admin/vouchers"
                     element={<AdminRoute><AdminVoucherPage /></AdminRoute>}
@@ -147,6 +160,10 @@ function App() {
                 <Route
                     path="admin/reviews"
                     element={<AdminRoute><AdminReviewPage /></AdminRoute>}
+                />
+                <Route
+                    path="admin/settings"
+                    element={<AdminRoute><AdminSettingsPage /></AdminRoute>}
                 />
             </Route>
         </Routes>

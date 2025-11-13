@@ -1,0 +1,306 @@
+/* --- Styles cho Menu.js --- */
+.container {
+    padding: 10px;
+}
+
+/* --- THAY ĐỔI: Thanh Nav Ngang (Yêu cầu 2) --- */
+.categoryNav {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 25px;
+    box-shadow: var(--card-shadow);
+
+    /* --- Thêm các thuộc tính Sticky --- */
+    position: sticky;
+    top: 70px; /* 70px là chiều cao của CustomerHeader */
+    z-index: 50; /* Dưới Header (100) nhưng trên nội dung */
+    height: 60px; /* Cố định chiều cao */
+    align-items: center; /* Căn giữa các link theo chiều dọc */
+    /* --- Hết thuộc tính Sticky --- */
+
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.categoryNav::-webkit-scrollbar {
+    display: none;
+}
+
+.categoryLink {
+    padding: 15px 20px;
+    text-decoration: none;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+.categoryLink:hover {
+    color: var(--primary-color);
+}
+.categoryLink:focus,
+.categoryLink:active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+/* --- KẾT THÚC NAV --- */
+
+
+/* --- THAY ĐỔI: Khu vực nhóm (Yêu cầu 2) --- */
+.categorySection {
+    margin-bottom: 30px;
+    /* Cập nhật lề scroll: 70px (header) + 60px (nav) + 10px (padding) = 140px */
+    scroll-margin-top: 140px;
+}
+.categoryTitle {
+    font-size: 1.8em;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+/* --- KẾT THÚC KHU VỰC NHÓM --- */
+
+
+.menuList {
+    list-style: none;
+    padding-left: 0;
+}
+
+/* --- THAY ĐỔI: Bố cục Lưới (Yêu cầu 1) --- */
+.gridContainer {
+    list-style: none;
+    padding-left: 0;
+    display: grid;
+
+    /* Đổi từ 'auto-fit' sang '3' để ép 3 cột */
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 20px;
+}
+
+/* --- (CSS cho Card giữ nguyên) --- */
+.menuItemCard {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.menuItemCard:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.menuItemCard.outOfStock {
+    opacity: 0.7;
+}
+.menuItemCard.outOfStock .addButton {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+.cardImageWrapper {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background-color: #f0f0f0;
+}
+.menuItemImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.placeholderImage {
+    composes: menuItemImage;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 3em;
+}
+.cardContent {
+    padding: 15px;
+    flex-grow: 1;
+}
+.cardContent h3 {
+    margin-top: 0;
+    margin-bottom: 5px;
+    color: var(--text-primary);
+}
+.cardContent p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.cardFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px 15px 15px;
+}
+.price {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--text-primary);
+}
+.addButton {
+    padding: 8px 15px;
+    font-size: 0.9em;
+    font-weight: bold;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.addButton:hover {
+    background-color: var(--primary-hover);
+}
+.addButton:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+.addButton:disabled:hover {
+    background-color: #ccc;
+}
+/* --- KẾT THÚC CSS CHO LƯỚI VÀ CARD --- */
+
+
+/* --- (Styles cho OptionModal giữ nguyên) --- */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+}
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 25px;
+    border: 1px solid #ccc;
+    border-radius: var(--border-radius);
+    z-index: 1001;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+/* (Các style .modal h3, .optionGroup, .radioLabel, .stepper, v.v. giữ nguyên) */
+.modal h3 { margin-top: 0; }
+.optionGroup {
+    margin: 15px 0;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+.optionGroup strong {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+}
+.radioLabel {
+    display: block;
+    margin: 5px 0;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.radioLabel:hover { background-color: #f9f9f9; }
+.radioLabel:has(input:checked) {
+    background-color: #f0f7ff;
+    border-color: var(--secondary-color);
+    font-weight: 500;
+}
+.stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+    margin: 5px 0;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+}
+.stepper:hover { background-color: #f9f9f9; }
+.stepperButton {
+    padding: 2px 8px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+}
+.stepperButton:hover { background-color: #ddd; }
+.stepperQty {
+    width: 20px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+.noteTextarea {
+    width: 100%;
+    min-height: 60px;
+    margin-top: 5px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.quantityStepper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+.quantityStepper button {
+    padding: 5px 12px;
+    font-size: 1.3em;
+    font-weight: bold;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.quantityStepper span {
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 0 10px;
+}
+.validationError {
+    color: var(--danger-color);
+    font-weight: 500;
+    margin-top: 10px;
+}
+.confirmButton {
+    width: 100%;
+    padding: 12px;
+    background: var(--success-color);
+    color: white;
+    margin-top: 20px;
+    font-size: 1.1em;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.confirmButton:hover {
+    background-color: var(--success-hover);
+}

@@ -1,0 +1,199 @@
+.container {
+    padding: 30px; /* Tăng padding */
+    max-width: 700px;
+    margin: 20px auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+}
+/* (Các style .container h2, h4, .statusBox, .deliveryNote, .addressBox... giữ nguyên) */
+.container h2 {
+    margin-top: 0;
+}
+.container h4 {
+    font-size: 1.2em;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+.statusBox {
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid;
+    text-align: center;
+}
+.statusBox h2 {
+    margin: 0;
+    font-size: 1.8em;
+}
+.statusBox p {
+    margin: 10px 0 0 0;
+    font-style: italic;
+    font-size: 1.1em;
+}
+.statusCancelled {
+    composes: statusBox;
+    background: #fff6f6;
+    border-color: var(--danger-color);
+    color: #c0392b;
+}
+.statusActive {
+    composes: statusBox;
+    background: #f0f7ff;
+    border-color: var(--secondary-color);
+    color: #0056b3;
+}
+.deliveryNote {
+    background: #f1fdf1;
+    border: 1px solid var(--success-color);
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+}
+.deliveryNote strong {
+    color: #004d40;
+}
+.deliveryNote p {
+    margin: 5px 0 0 0;
+    white-space: pre-wrap;
+    font-size: 1.1em;
+    color: #00695c;
+}
+.addressBox {
+    background: #f8f8f8;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    color: var(--text-secondary);
+}
+.addressBox strong {
+    color: var(--text-primary);
+}
+.addressBoxShipperNote {
+    font-style: italic;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #ddd;
+}
+.orderItemsList {
+    list-style: none;
+    padding-left: 0;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+
+/* --- SỬA ĐỔI .orderItem --- */
+.orderItem {
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    /* Thêm Flexbox để đẩy giá sang phải */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap; /* Cho phép xuống hàng nếu cần */
+}
+.orderItem:last-child {
+    border-bottom: none;
+}
+/* --- KẾT THÚC SỬA ĐỔI --- */
+
+.orderItemName {
+    font-weight: 500;
+    font-size: 1.1em;
+    color: var(--text-primary);
+    flex-basis: 70%; /* Chiếm phần lớn bên trái */
+}
+.orderItemNote {
+    font-size: 0.9em;
+    color: gray;
+    font-style: italic;
+    padding-left: 10px;
+    flex-basis: 100%; /* Luôn xuống hàng */
+}
+
+/* --- THÊM MỚI (Styles cho Tùy chọn và Giá) --- */
+.orderItemOptions {
+    composes: orderItemNote; /* Kế thừa style */
+    color: var(--danger-color, #c0392b);
+    font-weight: 500;
+}
+.orderItemPrice {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: var(--text-primary);
+    flex-basis: 30%; /* Chiếm phần nhỏ bên phải */
+    text-align: right;
+}
+/* --- KẾT THÚC THÊM MỚI --- */
+
+
+.paymentDetails {
+    text-align: right;
+    line-height: 1.8;
+    font-size: 1.1em;
+    color: var(--text-secondary);
+}
+.paymentDetails h3 {
+    margin-top: 10px;
+    color: var(--text-primary);
+}
+
+/* (Các style của trang Review giữ nguyên) */
+.reviewSection {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+.reviewSection h4 {
+    margin-bottom: 10px;
+    font-size: 1.3em;
+}
+.starRating {
+    margin-bottom: 10px;
+}
+.star {
+    cursor: pointer;
+    color: #ccc;
+    font-size: 2.5em;
+    margin-right: 5px;
+    transition: color 0.1s;
+}
+.starActive {
+    composes: star;
+    color: #f1c40f;
+}
+.reviewTextarea {
+    width: 100%;
+    min-height: 80px;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.reviewTextarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.2);
+}
+.submitButton {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    background: var(--success-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+.submitButton:hover {
+    background-color: var(--success-hover);
+}
+.submitButton:disabled {
+    background: #ccc;
+}

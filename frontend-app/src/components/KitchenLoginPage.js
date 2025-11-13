@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './Form.module.css';
+
 export const KitchenLoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -11,18 +14,17 @@ export const KitchenLoginPage = () => {
     const { employeeLogin, currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // Sửa điều hướng (useEffect)
+    // (logic useEffect và handleSubmit giữ nguyên)
     useEffect(() => {
         if (currentUser) {
             if (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN') {
-                navigate('/restaurant'); // SỬA
+                navigate('/restaurant');
             } else if (currentUser.role === 'EMPLOYEE') {
-                navigate('/restaurant/admin/orders'); // SỬA
+                navigate('/restaurant/admin/orders');
             }
         }
     }, [currentUser, navigate]);
 
-    // Sửa điều hướng (handleSubmit)
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -30,9 +32,9 @@ export const KitchenLoginPage = () => {
             const user = await employeeLogin(username, password);
 
             if (user.role === 'KITCHEN' || user.role === 'ADMIN') {
-                navigate('/restaurant'); // SỬA
+                navigate('/restaurant');
             } else if (user.role === 'EMPLOYEE') {
-                navigate('/restaurant/admin/orders'); // SỬA
+                navigate('/restaurant/admin/orders');
             } else {
                 setError('Đây không phải tài khoản của nhân viên/admin.');
             }
@@ -42,20 +44,30 @@ export const KitchenLoginPage = () => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto' }}>
+        // --- 2. SỬ DỤNG className ---
+        <div className={styles.formContainer}>
             <h2>Đăng nhập Bếp / Admin / NV</h2>
-            {/* (Form giữ nguyên) */}
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Username: </label>
-                    <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Username: </label>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className={styles.formInput}
+                    />
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                    <label>Mật khẩu: </label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Mật khẩu: </label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={styles.formInput}
+                    />
                 </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" style={{ marginTop: '20px', padding: '10px 15px' }}>Đăng nhập</button>
+                {error && <p className={styles.formError}>{error}</p>}
+                <button type="submit" className={styles.formButton}>Đăng nhập</button>
             </form>
         </div>
     );

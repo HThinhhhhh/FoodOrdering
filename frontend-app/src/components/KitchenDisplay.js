@@ -5,6 +5,9 @@ import SockJS from 'sockjs-client';
 import axios from 'axios';
 import { useMenu } from '../context/MenuContext';
 
+// --- 1. IMPORT TỆP CSS MỚI ---
+import './KitchenDisplay.css';
+
 const KITCHEN_API_URL = process.env.REACT_APP_API_URL;
 const BACKEND_WS_URL = `${KITCHEN_API_URL}/ws`;
 const SUB_TOPIC = '/topic/kitchen';
@@ -14,6 +17,7 @@ const SEND_DESTINATION = '/app/kitchen/update-status';
 const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemName }) => {
     const [tickedItems, setTickedItems] = useState(new Set());
 
+    // (Tất cả logic (handlers) giữ nguyên)
     const handleToggleTick = (itemIndex) => {
         setTickedItems(prevTicked => {
             const newTicked = new Set(prevTicked);
@@ -23,18 +27,17 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
         });
     };
 
-    // --- (Hàm renderActionButtons, handleCancelClick, handleAddNoteClick giữ nguyên) ---
     const renderActionButtons = () => {
         switch (order.status) {
-            case 'RECEIVED': // Admin vừa đẩy xuống
+            case 'RECEIVED':
                 return ( <button className="btn prepare" onClick={() => onUpdateStatus(order.id, 'PREPARING', 'Bắt đầu chuẩn bị đơn này?')}>Bắt đầu chuẩn bị</button> );
-            case 'PREPARING': // Bếp đang làm
+            case 'PREPARING':
                 return ( <button className="btn ready" onClick={() => onUpdateStatus(order.id, 'READY', 'Hoàn thành đơn này (sẵn sàng giao)?')}>Hoàn thành (Sẵn sàng)</button> );
-            case 'READY': // Bếp đã làm xong, chờ Admin/Shipper
+            case 'READY':
                 return <p className="status-ready">ĐÃ SẴN SÀNG (Chờ giao)</p>;
             case 'CANCELLED':
                 return <p className="status-cancelled">ĐÃ HỦY</p>;
-            default: // (PENDING, DELIVERING, COMPLETED Bếp không thấy)
+            default:
                 return null;
         }
     };
@@ -62,6 +65,7 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
             <h4>Đơn hàng #{order.id}</h4>
 
             <ul style={{ listStyle: 'none', paddingLeft: 0 }}>
+                {/* (Các li cho địa chỉ, ghi chú tài xế, ghi chú bếp giữ nguyên) */}
                 <li style={{ background: '#fff8e1', padding: '5px', borderRadius: '4px', marginBottom: '10px' }}>
                     <div style={{ fontWeight: 'bold' }}>Giao đến: {order.deliveryAddress}</div>
                     {order.shipperNote && (
@@ -77,7 +81,6 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                     </li>
                 )}
 
-                {/* --- BẮT ĐẦU SỬA ĐỔI (Hiển thị Options) --- */}
                 {order.items && order.items.map((item, index) => {
                     const isTicked = tickedItems.has(index);
                     const itemStyle = {
@@ -95,26 +98,22 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                             style={itemStyle}
                             onClick={() => (order.status === 'PREPARING' ? handleToggleTick(index) : null)}
                         >
-                            {/* Tên món ăn */}
                             <strong>{item.quantity} x {getItemName(item.menuItemId)}</strong>
 
-                            {/* Tùy chọn (Options) - Rất quan trọng cho bếp */}
+                            {/* --- 2. SỬ DỤNG className --- */}
                             {item.selectedOptionsText && (
-                                <div style={{ fontSize: '0.9em', color: '#c0392b', fontWeight: 'bold', paddingLeft: '10px' }}>
+                                <div className="kds-item-options">
                                     ↳ {item.selectedOptionsText}
                                 </div>
                             )}
-
-                            {/* Ghi chú của khách cho món ăn */}
                             {item.note && (
-                                <div style={{ fontSize: '0.9em', color: 'gray', fontStyle: 'italic', paddingLeft: '10px' }}>
+                                <div className="kds-item-note">
                                     ↳ Ghi chú KH: {item.note}
                                 </div>
                             )}
                         </li>
                     );
                 })}
-                {/* --- KẾT THÚC SỬA ĐỔI --- */}
             </ul>
 
             {renderActionButtons()}
@@ -124,14 +123,12 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                     <button
                         className="btn note"
                         onClick={handleAddNoteClick}
-                        style={{marginTop: '5px'}}
                     >
                         Thêm Ghi chú (Nội bộ)
                     </button>
                     <button
                         className="btn cancel"
                         onClick={handleCancelClick}
-                        style={{marginTop: '5px'}}
                     >
                         Hủy Đơn Hàng
                     </button>
@@ -146,6 +143,8 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
  * Component KDS Chính
  */
 export const KitchenDisplay = () => {
+    // (Toàn bộ logic state, useEffect, handlers giữ nguyên)
+    // ...
     const stompClientRef = useRef(null);
     const [orders, setOrders] = useState([]);
     const { getItemName } = useMenu();
@@ -182,11 +181,9 @@ export const KitchenDisplay = () => {
                 const updatedOrder = JSON.parse(message.body);
                 console.log("KDS nhận CẬP NHẬT từ Admin:", updatedOrder);
                 setOrders(prevOrders => {
-                    // Nếu đơn bị Hủy hoặc chuyển trạng thái Bếp không xem
                     if (updatedOrder.status === 'CANCELLED' || updatedOrder.status === 'DELIVERING' || updatedOrder.status === 'COMPLETED' || updatedOrder.status === 'PENDING_CONFIRMATION') {
                         return prevOrders.filter(o => o.id !== updatedOrder.id);
                     }
-                    // Cập nhật các trạng thái khác (vd: PREPARING -> READY)
                     return prevOrders.map(o => o.id === updatedOrder.id ? updatedOrder : o);
                 });
             });
@@ -253,6 +250,7 @@ export const KitchenDisplay = () => {
             alert("Lỗi khi thêm ghi chú: " + (error.response?.data || error.message));
         }
     };
+    // ...
 
     const receivedOrders = orders.filter(o => o.status === 'RECEIVED');
     const preparingOrders = orders.filter(o => o.status === 'PREPARING');
@@ -261,7 +259,7 @@ export const KitchenDisplay = () => {
     return (
         <div className="kds-container">
             {/* Cột 1: Đã nhận */}
-            <div className="kds-column" style={{ flex: 1 }}>
+            <div className="kds-column">
                 <h2 className="col-header received">
                     Đã nhận ({receivedOrders.length})
                 </h2>
@@ -278,7 +276,7 @@ export const KitchenDisplay = () => {
             </div>
 
             {/* Cột 2: Đang chuẩn bị */}
-            <div className="kds-column" style={{ flex: 2 }}>
+            <div className="kds-column preparing">
                 <h2 className="col-header preparing">
                     Đang chuẩn bị ({preparingOrders.length})
                 </h2>
@@ -295,7 +293,7 @@ export const KitchenDisplay = () => {
             </div>
 
             {/* Cột 3: Sẵn sàng */}
-            <div className="kds-column" style={{ flex: 1 }}>
+            <div className="kds-column">
                 <h2 className="col-header ready">
                     Sẵn sàng ({readyOrders.length})
                 </h2>
@@ -311,31 +309,8 @@ export const KitchenDisplay = () => {
                 ))}
             </div>
 
-
-            {/* (CSS) */}
-            <style>{`
-                .kds-container { display: flex; flex-direction: row; gap: 15px; padding: 10px; background-color: #333; min-height: 100vh; }
-                .kds-column { /* flex: 1; */ background-color: #4a4a4a; border-radius: 8px; padding: 10px; overflow-y: auto; max-height: 95vh; }
-                
-                .kds-sub-column { background-color: #4a4a4a; border-radius: 8px; overflow-y: auto; }
-                .col-header { color: white; text-align: center; border-bottom: 2px solid; padding-bottom: 10px; margin: 0; padding: 10px; }
-                
-                .col-header.received { border-color: #3498db; }
-                .col-header.preparing { border-color: #f1c40f; }
-                .col-header.ready { border-color: #2ecc71; }
-                .col-header.cancelled { border-color: #e74c3c; } 
-
-                .order-card { background-color: #fdfdfd; border: 1px solid #ccc; border-radius: 5px; padding: 15px; margin-bottom: 10px; }
-                .order-card h4 { margin-top: 0; }
-                .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; }
-                .btn.prepare { background-color: #f1c40f; }
-                .btn.ready { background-color: #2ecc71; }
-                .btn.completed { background-color: #95a5a6; }
-                .btn.cancel { background-color: #e74c3c; }
-                .btn.note { background-color: #0277bd; }
-                .status-cancelled { color: #e74c3c; font-weight: bold; text-align: center; }
-                .status-ready { color: #2ecc71; font-weight: bold; text-align: center; font-size: 1.1em; padding: 10px 0; }
-            `}</style>
+            {/* --- 3. XÓA BỎ THẺ <style> --- */}
+            {/* (Đã xóa) */}
         </div>
     );
 };

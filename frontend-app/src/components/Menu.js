@@ -1,61 +1,47 @@
 // src/components/Menu.js
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useMenu } from '../context/MenuContext';
 import { BigDecimal } from 'bigdecimal';
 
-const API_URL = process.env.REACT_APP_API_URL;
+import styles from './Menu.module.css';
 
-// --- COMPONENT MODAL (ĐÃ CẬP NHẬT LOGIC SỐ LƯỢNG) ---
+// --- COMPONENT MODAL (Không thay đổi, giữ nguyên 100%) ---
 const OptionModal = ({ item, onClose, onAddToCart }) => {
-
-    // --- SỬA ĐỔI STATE ---
+    // (Toàn bộ state và logic của Modal giữ nguyên)
     const [selectedOptions, setSelectedOptions] = useState(() => {
         const initialSelections = new Map();
         (item.optionGroups || []).forEach(group => {
             if (group.selectionType === 'SINGLE_REQUIRED' && group.options && group.options.length > 0) {
-                // Radio: Tự động chọn mục đầu tiên
                 initialSelections.set(group.id, group.options[0].id);
             }
             if (group.selectionType === 'MULTI_SELECT') {
-                // Multi-select: Khởi tạo là Map { optionId -> quantity }
                 initialSelections.set(group.id, new Map());
             }
-            // (SINGLE_OPTIONAL mặc định là null)
         });
         return initialSelections;
     });
-    // --- KẾT THÚC SỬA ĐỔI ---
-
     const [note, setNote] = useState('');
     const [quantity, setQuantity] = useState(1);
     const [validationError, setValidationError] = useState('');
 
-    // --- SỬA ĐỔI: TÍNH TOÁN GIÁ (HỖ TRỢ SỐ LƯỢNG OPTION) ---
-    let currentPrice = new BigDecimal(item.price.toString()); // Giá gốc
-    let optionsText = []; // Chuỗi text cho Bếp
-
+    let currentPrice = new BigDecimal(item.price.toString());
+    let optionsText = [];
     (item.optionGroups || []).forEach(group => {
         const selection = selectedOptions.get(group.id);
         if (!selection) return;
-
         if (group.selectionType === 'MULTI_SELECT') {
-            // selection là một Map (Vd: {3 => 2, 4 => 1})
             selection.forEach((quantity, selectedItemId) => {
                 const selectedItem = group.options.find(opt => opt.id === selectedItemId);
                 if (selectedItem) {
-                    // Giá = Giá gốc + (Giá option * số lượng option)
                     const optionPrice = new BigDecimal(selectedItem.price.toString());
                     const optionQuantity = new BigDecimal(quantity.toString());
                     currentPrice = currentPrice.add(optionPrice.multiply(optionQuantity));
-
                     optionsText.push(`${quantity} x ${selectedItem.name}`);
                 }
             });
         } else {
-            // selection là một ID (Vd: 2) - Logic Radio giữ nguyên
             const selectedItem = group.options.find(opt => opt.id === selection);
             if (selectedItem) {
                 currentPrice = currentPrice.add(new BigDecimal(selectedItem.price.toString()));
@@ -63,46 +49,32 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
             }
         }
     });
-
-    const finalPricePerUnit = currentPrice.doubleValue(); // Chuyển về số
+    const finalPricePerUnit = currentPrice.doubleValue();
     const selectedOptionsText = optionsText.join(', ');
-    // --- KẾT THÚC TÍNH TOÁN ---
-
-
-    // --- HÀM MỚI: Xử lý chọn Radio ---
     const handleRadioSelect = (groupId, optionItemId) => {
-        setValidationError(''); // Xóa lỗi cũ
+        setValidationError('');
         setSelectedOptions(prev => {
             const newSelections = new Map(prev);
-            newSelections.set(groupId, optionItemId); // Chỉ gán ID
+            newSelections.set(groupId, optionItemId);
             return newSelections;
         });
     };
-
-    // --- HÀM MỚI: Xử lý tăng/giảm số lượng cho Multi-select ---
     const handleMultiQuantityChange = (groupId, optionItemId, delta) => {
         setValidationError('');
         setSelectedOptions(prev => {
             const newSelections = new Map(prev);
             const currentMap = newSelections.get(groupId) || new Map();
-
             const currentQty = currentMap.get(optionItemId) || 0;
-            const newQty = Math.max(0, currentQty + delta); // Đảm bảo không âm
-
+            const newQty = Math.max(0, currentQty + delta);
             if (newQty > 0) {
                 currentMap.set(optionItemId, newQty);
             } else {
-                currentMap.delete(optionItemId); // Xóa khỏi map nếu số lượng là 0
+                currentMap.delete(optionItemId);
             }
-
-            newSelections.set(groupId, new Map(currentMap)); // Cập nhật Map
+            newSelections.set(groupId, new Map(currentMap));
             return newSelections;
         });
     };
-    // --- KẾT THÚC HÀM MỚI ---
-
-
-    // (Hàm handleConfirmAdd giữ nguyên - logic validation vẫn đúng)
     const handleConfirmAdd = () => {
         setValidationError('');
         for (const group of (item.optionGroups || [])) {
@@ -113,8 +85,6 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
                 }
             }
         }
-        // --- KẾT THÚC VALIDATION ---
-
         const itemToAdd = {
             ...item,
             finalPrice: finalPricePerUnit,
@@ -126,58 +96,23 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
         onClose();
     };
 
-    // (CSS cho Modal và Overlay giữ nguyên)
-    const modalStyle = {
-        position: 'fixed', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'white', padding: '20px',
-        border: '1px solid #ccc', borderRadius: '8px', zIndex: 1001,
-        width: '90%', maxWidth: '500px',
-        maxHeight: '80vh', overflowY: 'auto',
-        boxSizing: 'border-box'
-    };
-    const overlayStyle = {
-        position: 'fixed', top: 0, left: 0,
-        width: '100%', height: '100%',
-        backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000
-    };
-    const groupStyle = { margin: '10px 0', borderTop: '1px solid #eee', paddingTop: '10px' };
-
-    // --- CSS MỚI CHO STEPPER ---
-    const stepperStyle = {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-    };
-    const stepperButton = {
-        padding: '2px 8px',
-        fontWeight: 'bold',
-        cursor: 'pointer'
-    };
-    // --- KẾT THÚC CSS MỚI ---
-
     return (
         <>
-            <div style={overlayStyle} onClick={onClose}></div>
-            <div style={modalStyle}>
+            <div className={styles.overlay} onClick={onClose}></div>
+            <div className={styles.modal}>
+                {/* (Toàn bộ JSX của Modal giữ nguyên) */}
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
-
-                {/* Lặp qua các nhóm tùy chọn */}
                 {(item.optionGroups || []).map(group => (
-                    <div key={group.id} style={groupStyle}>
+                    <div key={group.id} className={styles.optionGroup}>
                         <strong>{group.name}</strong>
-
-                        {/* --- SỬA ĐỔI LOGIC RENDER --- */}
                         <div>
                             {group.options.map(option => {
                                 const isRadio = group.selectionType === 'SINGLE_REQUIRED' || group.selectionType === 'SINGLE_OPTIONAL';
-
                                 if (isRadio) {
-                                    // --- LOGIC RENDER RADIO (Như cũ) ---
                                     const isChecked = selectedOptions.get(group.id) === option.id;
                                     return (
-                                        <label key={option.id} style={{display: 'block', margin: '5px 0'}}>
+                                        <label key={option.id} className={styles.radioLabel}>
                                             <input
                                                 type="radio"
                                                 name={`group-${group.id}`}
@@ -189,24 +124,23 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
                                         </label>
                                     );
                                 } else {
-                                    // --- LOGIC RENDER MULTI_SELECT (MỚI) ---
                                     const currentQty = selectedOptions.get(group.id)?.get(option.id) || 0;
                                     return (
-                                        <div key={option.id} style={{...stepperStyle, justifyContent: 'space-between', margin: '5px 0'}}>
+                                        <div key={option.id} className={styles.stepper}>
                                             <span>
                                                 {option.name}
                                                 ( +{formatCurrency(option.price)} )
                                             </span>
-                                            <div style={stepperStyle}>
+                                            <div className={styles.stepper}>
                                                 <button
-                                                    style={stepperButton}
+                                                    className={styles.stepperButton}
                                                     onClick={() => handleMultiQuantityChange(group.id, option.id, -1)}
                                                 >
                                                     -
                                                 </button>
-                                                <span style={{width: '20px', textAlign: 'center'}}>{currentQty}</span>
+                                                <span className={styles.stepperQty}>{currentQty}</span>
                                                 <button
-                                                    style={stepperButton}
+                                                    className={styles.stepperButton}
                                                     onClick={() => handleMultiQuantityChange(group.id, option.id, 1)}
                                                 >
                                                     +
@@ -217,32 +151,23 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
                                 }
                             })}
                         </div>
-                        {/* --- KẾT THÚC LOGIC RENDER --- */}
                     </div>
                 ))}
-
-                {/* Ghi chú */}
-                <div style={groupStyle}>
+                <div className={styles.optionGroup}>
                     <label><strong>Ghi chú (cho món này):</strong></label>
                     <textarea
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
-                        style={{width: '100%', minHeight: '60px', marginTop: '5px', boxSizing: 'border-box'}}
+                        className={styles.noteTextarea}
                     />
                 </div>
-
-                {/* Số lượng */}
-                <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginTop: '20px'}}>
+                <div className={styles.quantityStepper}>
                     <button onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</button>
                     <span>{quantity}</span>
                     <button onClick={() => setQuantity(q => q + 1)}>+</button>
                 </div>
-
-                {/* Hiển thị lỗi Validation */}
-                {validationError && <p style={{color: 'red'}}>{validationError}</p>}
-
-                {/* Nút xác nhận */}
-                <button onClick={handleConfirmAdd} style={{width: '100%', padding: '10px', background: 'green', color: 'white', marginTop: '20px', fontSize: '1.1em', border: 'none', borderRadius: '5px', cursor: 'pointer'}}>
+                {validationError && <p className={styles.validationError}>{validationError}</p>}
+                <button onClick={handleConfirmAdd} className={styles.confirmButton}>
                     Thêm vào giỏ - {formatCurrency(finalPricePerUnit * quantity)}
                 </button>
             </div>
@@ -252,14 +177,13 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
 // --- KẾT THÚC COMPONENT MODAL ---
 
 
-
-//
-// Component MENU (không thay đổi)
-//
+// --- COMPONENT MENU (ĐÃ SỬA LẠI HOÀN TOÀN) ---
 export const Menu = () => {
     const [loading, setLoading] = useState(true);
-    const [isVegetarian, setIsVegetarian] = useState(false);
-    const [isSpicy, setIsSpicy] = useState(false);
+    // --- XÓA STATE CỦA FILTER CŨ ---
+    // const [isVegetarian, setIsVegetarian] = useState(false);
+    // const [isSpicy, setIsSpicy] = useState(false);
+
     const { menuItems } = useMenu();
     const { addToCart } = useCart();
     const [selectedItem, setSelectedItem] = useState(null);
@@ -270,7 +194,47 @@ export const Menu = () => {
         }
     }, [menuItems]);
 
-    // (Hàm này giữ nguyên, nó chỉ mở modal hoặc add thẳng)
+    // --- LOGIC MỚI: NHÓM MÓN ĂN (Yêu cầu 1) ---
+    const groupedMenu = useMemo(() => {
+        // Thứ tự hiển thị và Tên Tiêu đề
+        const categoryConfig = {
+            'COMBO': { name: 'Combo Khuyến Mãi', items: [] },
+            'MAIN_COURSE': { name: 'Món Chính', items: [] },
+            'APPETIZER': { name: 'Món Khai Vị', items: [] },
+            'BEVERAGE': { name: 'Thức Uống', items: [] },
+            'DESSERT': { name: 'Món Tráng Miệng', items: [] },
+            // Nhóm đặc biệt cho Món Chay
+            'VEGETARIAN': { name: 'Món Chay', items: [] },
+            'OTHER': { name: 'Khác', items: [] },
+        };
+
+        // Lọc và nhóm các món ăn
+        for (const item of menuItems) {
+            // Lọc các món bị ẩn (DISCONTINUED)
+            if (item.status === 'DISCONTINUED') continue;
+
+            // Thêm vào nhóm Category chính
+            if (categoryConfig[item.category]) {
+                categoryConfig[item.category].items.push(item);
+            } else {
+                categoryConfig['OTHER'].items.push(item);
+            }
+
+            // Thêm vào nhóm Món Chay (nếu có)
+            if (item.vegetarian) {
+                categoryConfig['VEGETARIAN'].items.push(item);
+            }
+        }
+
+        // Chuyển đổi sang mảng và lọc các nhóm rỗng
+        return Object.entries(categoryConfig)
+            .map(([key, value]) => ({ key, ...value }))
+            .filter(group => group.items.length > 0);
+
+    }, [menuItems]);
+    // --- KẾT THÚC LOGIC NHÓM ---
+
+    // (Hàm handleOpenOptions giữ nguyên)
     const handleOpenOptions = (item) => {
         if (!item.optionGroups || item.optionGroups.length === 0) {
             addToCart({
@@ -286,46 +250,84 @@ export const Menu = () => {
     };
 
     return (
-        <div>
+        <div className={styles.container}>
             <h3>Thực đơn</h3>
-            {/* (Bộ lọc giữ nguyên) */}
-            <div>
-                <label>
-                    <input type="checkbox" checked={isVegetarian} onChange={() => setIsVegetarian(!isVegetarian)} />
-                    Món chay
-                </label>
-                <label style={{ marginLeft: '10px' }}>
-                    <input type="checkbox" checked={isSpicy} onChange={() => setIsSpicy(!isSpicy)} />
-                    Món cay
-                </label>
-            </div>
 
-            {/* (Danh sách món ăn giữ nguyên) */}
-            {loading ? <p>Đang tải...</p> : (
-                <ul style={{listStyle: 'none', paddingLeft: 0}}>
-                    {menuItems.map(item => {
-                        if (isVegetarian && !item.isVegetarian) return null;
-                        if (isSpicy && !item.isSpicy) return null;
-                        const isOutOfStock = item.status === 'TEMP_OUT_OF_STOCK';
-
-                        return (
-                            <li key={item.id} style={{ opacity: isOutOfStock ? 0.6 : 1, margin: '15px 0' }}>
-                                <strong>{item.name}</strong> - {formatCurrency(item.price)}
-                                <p>{item.description}</p>
-
-                                <button
-                                    onClick={() => handleOpenOptions(item)}
-                                    disabled={isOutOfStock}
-                                >
-                                    {isOutOfStock ? "Tạm hết hàng" : "Thêm vào giỏ"}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
+            {/* --- THANH SIDEBAR NGANG (Yêu cầu 3) --- */}
+            {loading ? null : (
+                <nav className={styles.categoryNav}>
+                    {groupedMenu.map(group => (
+                        <a
+                            key={group.key}
+                            href={`#category-${group.key}`}
+                            className={styles.categoryLink}
+                        >
+                            {group.name}
+                        </a>
+                    ))}
+                </nav>
             )}
 
-            {/* (Hiển thị modal giữ nguyên) */}
+            {/* --- XÓA BỎ FILTER CŨ --- */}
+            {/* (Đã xóa) */}
+
+            {loading ? <p>Đang tải...</p> : (
+                // --- DANH SÁCH MÓN ĂN THEO NHÓM (Yêu cầu 1 & 2) ---
+                <div className={styles.menuList}>
+                    {groupedMenu.map(group => (
+                        <section
+                            key={group.key}
+                            id={`category-${group.key}`}
+                            className={styles.categorySection}
+                        >
+                            <h2 className={styles.categoryTitle}>{group.name}</h2>
+
+                            {/* BỐ CỤC LƯỚI (GRID) */}
+                            <ul className={styles.gridContainer}>
+                                {group.items.map(item => {
+                                    const isOutOfStock = item.status === 'TEMP_OUT_OF_STOCK';
+
+                                    // ĐÂY LÀ MỖI Ô (CARD)
+                                    return (
+                                        <li key={item.id} className={`${styles.menuItemCard} ${isOutOfStock ? styles.outOfStock : ''}`}>
+                                            {/* 1. KHỐI HÌNH ẢNH */}
+                                            <div className={styles.cardImageWrapper}>
+                                                {item.imageUrl ? (
+                                                    <img src={item.imageUrl} alt={item.name} className={styles.menuItemImage} />
+                                                ) : (
+                                                    <div className={styles.placeholderImage}>
+                                                        <span>🍔</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 2. KHỐI NỘI DUNG */}
+                                            <div className={styles.cardContent}>
+                                                <h3>{item.name}</h3>
+                                                <p>{item.description}</p>
+                                            </div>
+
+                                            {/* 3. KHỐI CHÂN CARD (GIÁ & NÚT) */}
+                                            <div className={styles.cardFooter}>
+                                                <strong className={styles.price}>{formatCurrency(item.price)}</strong>
+                                                <button
+                                                    onClick={() => handleOpenOptions(item)}
+                                                    disabled={isOutOfStock}
+                                                    className={styles.addButton}
+                                                >
+                                                    {isOutOfStock ? "Tạm hết" : "Thêm"}
+                                                </button>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </section>
+                    ))}
+                </div>
+            )}
+
+            {/* (Modal JSX giữ nguyên) */}
             {selectedItem && (
                 <OptionModal
                     item={selectedItem}

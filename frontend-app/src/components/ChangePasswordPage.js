@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './Form.module.css';
+
 const API_URL = process.env.REACT_APP_API_URL;
 
 export const ChangePasswordPage = () => {
@@ -14,6 +17,7 @@ export const ChangePasswordPage = () => {
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
+        // ... (logic handleSubmit giữ nguyên)
         e.preventDefault();
         setError('');
         setSuccess('');
@@ -53,24 +57,45 @@ export const ChangePasswordPage = () => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto' }}>
+        // --- 2. SỬ DỤNG className ---
+        <div className={styles.formContainer}>
             <h2>Đổi mật khẩu</h2>
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Mật khẩu hiện tại:</label>
-                    <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Mật khẩu hiện tại:</label>
+                    <input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        required
+                        className={styles.formInput}
+                    />
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                    <label>Mật khẩu mới:</label>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Mật khẩu mới:</label>
+                    <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        className={styles.formInput}
+                    />
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                    <label>Xác nhận mật khẩu mới:</label>
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Xác nhận mật khẩu mới:</label>
+                    <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className={styles.formInput}
+                    />
                 </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                {success && <p style={{ color: 'green' }}>{success}</p>}
-                <button type="submit" disabled={loading} style={{ marginTop: '20px', padding: '10px 15px' }}>
+
+                {error && <p className={styles.formError}>{error}</p>}
+                {success && <p className={styles.formSuccess}>{success}</p>}
+
+                <button type="submit" disabled={loading} className={styles.formButton}>
                     {loading ? 'Đang xử lý...' : 'Xác nhận đổi'}
                 </button>
             </form>

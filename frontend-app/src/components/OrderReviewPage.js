@@ -4,15 +4,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useMenu } from '../context/MenuContext';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './DetailPage.module.css';
+
 const API_URL = process.env.REACT_APP_API_URL;
 
-// Component Rating (1-5 sao)
+// --- 2. CẬP NHẬT StarRating (dùng className) ---
 const StarRating = ({ rating, setRating }) => (
-    <div>
+    <div className={styles.starRating}>
         {[1, 2, 3, 4, 5].map(star => (
             <span
                 key={star}
-                style={{ cursor: 'pointer', color: star <= rating ? 'gold' : 'gray', fontSize: '2em' }}
+                className={star <= rating ? styles.starActive : styles.star}
                 onClick={() => setRating(star)}
             >
                 ★
@@ -22,23 +25,19 @@ const StarRating = ({ rating, setRating }) => (
 );
 
 export const OrderReviewPage = () => {
+    // (State và logic (fetchOrder, handleItemReviewChange, handleSubmitReview) giữ nguyên)
+    // ...
     const { orderId } = useParams();
     const navigate = useNavigate();
-    const { getItemName } = useMenu(); // Lấy tên món ăn
+    const { getItemName } = useMenu();
 
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-
-    // State cho đánh giá
     const [deliveryRating, setDeliveryRating] = useState(5);
     const [deliveryComment, setDeliveryComment] = useState('');
-
-    // State cho đánh giá món ăn
-    // Ví dụ: { 1: { rating: 0, comment: '' }, 4: { rating: 0, comment: '' } }
     const [itemReviews, setItemReviews] = useState({});
 
-    // Tải thông tin đơn hàng cần đánh giá
     useEffect(() => {
         const fetchOrder = async () => {
             setLoading(true);
@@ -48,16 +47,11 @@ export const OrderReviewPage = () => {
                 const currentOrder = allOrders.find(o => o.id.toString() === orderId);
 
                 if (currentOrder) {
-                    // Kiểm tra logic (Backend cũng kiểm tra, nhưng frontend nên kiểm tra trước)
                     if (currentOrder.status !== 'COMPLETED') throw new Error("Đơn hàng chưa hoàn thành.");
                     if (currentOrder.isReviewed) throw new Error("Đơn hàng đã được đánh giá.");
-
                     setOrder(currentOrder);
-
-                    // Khởi tạo state cho đánh giá món ăn
                     const initialReviews = {};
                     currentOrder.items.forEach(item => {
-                        // Dùng menuItemId làm key
                         initialReviews[item.menuItemId] = { rating: 5, comment: '' };
                     });
                     setItemReviews(initialReviews);
@@ -72,7 +66,6 @@ export const OrderReviewPage = () => {
         fetchOrder();
     }, [orderId]);
 
-    // Hàm cập nhật state cho đánh giá món ăn
     const handleItemReviewChange = (menuItemId, field, value) => {
         setItemReviews(prev => ({
             ...prev,
@@ -83,12 +76,9 @@ export const OrderReviewPage = () => {
         }));
     };
 
-    // Gửi đánh giá
     const handleSubmitReview = async () => {
         setLoading(true);
         setError('');
-
-        // Chuẩn bị payload (DTO)
         const payload = {
             orderId: order.id,
             deliveryRating: deliveryRating,
@@ -109,35 +99,32 @@ export const OrderReviewPage = () => {
             setLoading(false);
         }
     };
+    // ...
 
     if (loading) return <p>Đang tải...</p>;
     if (error) return <p style={{ color: 'red' }}>Lỗi: {error}</p>;
     if (!order) return <p>Không tìm thấy đơn hàng.</p>;
 
     return (
-        <div style={{ padding: '20px', maxWidth: '700px', margin: 'auto' }}>
+        // --- 3. SỬ DỤNG className ---
+        <div className={styles.container}>
             <h2>Đánh giá Đơn hàng #{order.id}</h2>
 
-            {/* Đánh giá Giao hàng (Goal 1) */}
-            <section style={{ marginBottom: '20px' }}>
+            <section className={styles.reviewSection}>
                 <h4>Bạn thấy việc giao hàng thế nào?</h4>
                 <StarRating rating={deliveryRating} setRating={setDeliveryRating} />
                 <textarea
                     placeholder="Để lại bình luận về tài xế..."
                     value={deliveryComment}
                     onChange={(e) => setDeliveryComment(e.target.value)}
-                    style={{ width: '100%', minHeight: '80px', marginTop: '10px' }}
+                    className={styles.reviewTextarea}
                 />
             </section>
 
-            <hr />
-
-            {/* Đánh giá Món ăn (Goal 2) */}
-            <section style={{ marginTop: '20px' }}>
+            <section className={styles.reviewSection} style={{borderBottom: 'none'}}>
                 <h4>Đánh giá các món ăn trong đơn hàng:</h4>
                 {order.items.map(item => (
                     <div key={item.menuItemId} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '5px', marginBottom: '15px' }}>
-                        {/* Tên món ăn được lấy từ DTO (đã sửa ở backend) */}
                         <strong>{item.name || getItemName(item.menuItemId)}</strong>
                         <StarRating
                             rating={itemReviews[item.menuItemId]?.rating || 0}
@@ -147,7 +134,8 @@ export const OrderReviewPage = () => {
                             placeholder="Để lại bình luận về món ăn này..."
                             value={itemReviews[item.menuItemId]?.comment || ''}
                             onChange={(e) => handleItemReviewChange(item.menuItemId, 'comment', e.target.value)}
-                            style={{ width: '100%', minHeight: '60px', marginTop: '10px' }}
+                            className={styles.reviewTextarea}
+                            style={{minHeight: '60px'}} // Ghi đè style
                         />
                     </div>
                 ))}
@@ -156,7 +144,7 @@ export const OrderReviewPage = () => {
             <button
                 onClick={handleSubmitReview}
                 disabled={loading}
-                style={{ width: '100%', padding: '15px', fontSize: '1.2em', fontWeight: 'bold', background: 'green', color: 'white', border: 'none' }}
+                className={styles.submitButton}
             >
                 Gửi Đánh giá
             </button>

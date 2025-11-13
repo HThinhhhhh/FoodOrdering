@@ -1,0 +1,92 @@
+.container {
+    padding: 20px;
+    max-width: 1000px;
+    margin: 20px auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+}
+.container h3 {
+    margin-top: 0;
+    font-size: 1.8em;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.table th {
+    border-bottom-width: 2px;
+    border-bottom-color: #ccc;
+    color: var(--text-secondary);
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+
+.table tr:last-child td {
+    border-bottom: none;
+}
+.table tr:hover td {
+    background-color: #fcfcfc;
+}
+
+.actionCell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.actionLink,
+.actionButton {
+    padding: 6px 12px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.9em;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.actionLink {
+    background-color: var(--secondary-color);
+    color: white;
+}
+.actionLink:hover {
+    background-color: #0056b3;
+}
+
+.actionButton {
+    background-color: #6c757d;
+    color: white;
+    font-family: inherit;
+}
+.actionButton:hover {
+    background-color: #5a6268;
+}
+
+.reviewLink {
+    composes: actionLink;
+    background-color: var(--primary-color);
+    color: white;
+}
+.reviewLink:hover {
+    background-color: var(--primary-hover);
+}
+
+.reviewedText {
+    color: gray;
+    font-style: italic;
+    font-size: 0.9em;
+}

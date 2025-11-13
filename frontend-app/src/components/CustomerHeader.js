@@ -2,42 +2,15 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import styles from './CustomerHeader.module.css';
 
-// (CSS cho Header)
-const navStyle = {
-    padding: '10px 20px',
-    background: '#eee',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-};
-const linkStyle = {
-    marginRight: '15px',
-    textDecoration: 'none',
-    color: '#333',
-    fontWeight: 'bold'
-};
-// --- THÊM STYLE MỚI ---
-const socialLinkStyle = {
-    ...linkStyle,
-    fontWeight: 'normal',
-    color: 'blue',
-    fontSize: '0.9em'
-};
-// --- KẾT THÚC THÊM ---
-const buttonStyle = {
-    cursor: 'pointer',
-    background: 'none',
-    border: 'none',
-    color: 'blue',
-    textDecoration: 'underline',
-    fontSize: '1em',
-    fontFamily: 'inherit'
-};
+import { useSettings } from '../context/SettingsContext';
 
 export const CustomerHeader = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
+
+    const { settings } = useSettings();
 
     const handleLogout = async () => {
         await logout();
@@ -48,16 +21,16 @@ export const CustomerHeader = () => {
         if (currentUser && currentUser.role === 'DINER') {
             return (
                 <>
-                    <Link to="/" style={linkStyle}>Thực đơn</Link>
-                    <Link to="/my-orders" style={linkStyle}>Đơn hàng của tôi</Link>
+                    <Link to="/" className={styles.linkStyle}>Thực đơn</Link>
+                    <Link to="/my-orders" className={styles.linkStyle}>Đơn hàng của tôi</Link>
                 </>
             );
         } else {
             return (
                 <>
-                    <Link to="/" style={linkStyle}>Thực đơn</Link>
-                    <Link to="/login" style={linkStyle}>Đăng nhập</Link>
-                    <Link to="/register" style={linkStyle}>Đăng ký</Link>
+                    <Link to="/" className={styles.linkStyle}>Thực đơn</Link>
+                    <Link to="/login" className={styles.linkStyle}>Đăng nhập</Link>
+                    <Link to="/register" className={styles.linkStyle}>Đăng ký</Link>
                 </>
             );
         }
@@ -66,16 +39,16 @@ export const CustomerHeader = () => {
     const renderUserActions = () => {
         if (currentUser && currentUser.role === 'DINER') {
             return (
-                <div>
+                <div className={styles.userActions}>
+                    <span className={styles.username}>Chào, {currentUser.name || currentUser.username}!</span>
                     <Link
                         to="/change-password"
-                        style={{...linkStyle, fontSize: '0.9em', color: 'blue', textDecoration: 'underline'}}
+                        className={styles.userPasswordLink}
                     >
                         Đổi mật khẩu
                     </Link>
-
-                    <button onClick={handleLogout} style={buttonStyle}>
-                        Đăng xuất ({currentUser.username})
+                    <button onClick={handleLogout} className={styles.buttonStyle}>
+                        Đăng xuất
                     </button>
                 </div>
             );
@@ -83,24 +56,35 @@ export const CustomerHeader = () => {
         return null;
     };
 
+    const restaurantName = settings?.restaurantName || "GourmetGo";
+
     return (
-        <nav style={navStyle}>
-            <div>
+        <nav className={styles.navStyle}>
+            <div className={styles.brand}>
+                <Link to="/" className={styles.brandLink}>
+                    {/* --- SỬA ĐỔI: Chỉ hiển thị tên hoặc logo nhỏ nếu có --- */}
+                    {settings?.logoUrl ? ( // Giả định bạn sẽ thêm logoUrl riêng (xem ghi chú bên dưới)
+                        <img src={settings.logoUrl} alt={restaurantName} className={styles.brandLogo} />
+                    ) : (
+                        <span>{restaurantName}</span>
+                    )}
+                </Link>
+            </div>
+
+            <div className={styles.navLinks}>
                 {renderLinks()}
             </div>
 
-            {/* --- THÊM PHÍM TẮT ZALO/FB (FR7.3) --- */}
-            <div>
-                <a href="https://zalo.me/your-zalo-id" target="_blank" rel="noopener noreferrer" style={socialLinkStyle}>
+            <div className={styles.contactLinks}>
+                <a href="https://zalo.me/your-zalo-id" target="_blank" rel="noopener noreferrer" className={styles.socialLinkStyle}>
                     Hỗ trợ Zalo
                 </a>
-                <a href="https://facebook.com/your-page" target="_blank" rel="noopener noreferrer" style={socialLinkStyle}>
+                <a href="https://facebook.com/your-page" target="_blank" rel="noopener noreferrer" className={styles.socialLinkStyle}>
                     Facebook
                 </a>
             </div>
-            {/* --- KẾT THÚC THÊM --- */}
 
-            <div>{renderUserActions()}</div>
+            <div className={styles.userSection}>{renderUserActions()}</div>
         </nav>
     );
 };

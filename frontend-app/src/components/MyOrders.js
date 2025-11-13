@@ -1,22 +1,24 @@
 // src/components/MyOrders.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom'; // <-- 1. THÊM useNavigate
+import { Link, useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/formatCurrency';
-import { useCart } from '../context/CartContext';     // <-- 2. THÊM IMPORT CART
-import { useMenu } from '../context/MenuContext';     // <-- 3. THÊM IMPORT MENU
+import { useCart } from '../context/CartContext';
+import { useMenu } from '../context/MenuContext';
+
+// --- 1. IMPORT CSS MODULE ---
+import styles from './MyOrders.module.css';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
 export const MyOrders = () => {
+    // (State và logic (fetchOrders, handleReOrder) giữ nguyên)
+    // ...
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // --- 4. THÊM CÁC HOOKS ---
     const navigate = useNavigate();
     const { loadCartFromReorder } = useCart();
-    const { menuItems } = useMenu(); // Lấy danh sách món ăn từ MenuContext
-    // --- KẾT THÚC THÊM HOOKS ---
+    const { menuItems } = useMenu();
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -32,28 +34,20 @@ export const MyOrders = () => {
         fetchOrders();
     }, []);
 
-    // --- 5. THÊM HÀM HANDLER MỚI ---
     const handleReOrder = async (orderId) => {
-        // 1. Xác nhận với người dùng
         const confirmed = window.confirm(
             "Đặt lại đơn hàng sẽ XÓA giỏ hàng hiện tại của bạn. Bạn có muốn tiếp tục?"
         );
         if (!confirmed) {
             return;
         }
-
-        setLoading(true); // Hiển thị loading
-
+        setLoading(true);
         try {
-            // 2. Gọi API để lấy chi tiết đơn hàng cũ
             const response = await axios.get(`${API_URL}/api/orders/${orderId}/reorder`);
-            const reorderItems = response.data; // Đây là List<ReOrderItemDTO>
+            const reorderItems = response.data;
 
             if (reorderItems && reorderItems.length > 0) {
-                // 3. Gọi hàm context để nạp giỏ hàng (truyền cả danh sách menu đầy đủ)
                 loadCartFromReorder(reorderItems, menuItems);
-
-                // 4. Chuyển hướng về trang chủ (nơi có giỏ hàng)
                 alert("Đã thêm các món từ đơn hàng cũ vào giỏ hàng!");
                 navigate('/');
             } else {
@@ -66,23 +60,23 @@ export const MyOrders = () => {
             setLoading(false);
         }
     };
-    // --- KẾT THÚC HÀM HANDLER ---
-
+    // ...
 
     if (loading) { return <p>Đang tải các đơn hàng của bạn...</p>; }
     if (orders.length === 0) { return <p>Bạn chưa có đơn hàng nào.</p>; }
 
     return (
-        <div style={{ padding: '20px' }}>
+        // --- 2. SỬ DỤNG className ---
+        <div className={styles.container}>
             <h3>Đơn hàng của tôi</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className={styles.table}>
                 <thead>
-                <tr style={{ borderBottom: '2px solid black' }}>
-                    <th style={{ textAlign: 'left' }}>Mã Đơn</th>
-                    <th style={{ textAlign: 'left' }}>Trạng thái</th>
-                    <th style={{ textAlign: 'left' }}>Tổng tiền</th>
-                    <th style={{ textAlign: 'left' }}>Thời gian đặt</th>
-                    <th style={{ textAlign: 'left' }}>Hành động</th>
+                <tr >
+                    <th>Mã Đơn</th>
+                    <th>Trạng thái</th>
+                    <th>Tổng tiền</th>
+                    <th>Thời gian đặt</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -92,39 +86,35 @@ export const MyOrders = () => {
                     const canReview = order.status === 'COMPLETED' && !order.isReviewed && isRecent;
 
                     return (
-                        <tr key={order.id} style={{ borderBottom: '1px solid #ccc' }}>
+                        <tr key={order.id}>
                             <td>#{order.id}</td>
                             <td>{order.status}</td>
                             <td>{formatCurrency(order.grandTotal)}</td>
                             <td>{new Date(order.orderTime).toLocaleString()}</td>
-
-                            {/* 7. GOM CÁC HÀNH ĐỘNG VÀO MỘT CỘT */}
-                            <td>
-                                <Link to={`/order-status/${order.id}`} style={{ marginRight: '10px' }}>
+                            <td className={styles.actionCell}>
+                                <Link to={`/order-status/${order.id}`} className={styles.actionLink}>
                                     Xem
                                 </Link>
 
-                                {/* Nút Đặt lại */}
                                 {order.status !== 'CANCELLED' && (
                                     <button
                                         onClick={() => handleReOrder(order.id)}
-                                        style={{ padding: '3px 8px', cursor: 'pointer', marginRight: '10px' }}
+                                        className={styles.actionButton}
                                     >
                                         Đặt lại
                                     </button>
                                 )}
 
-                                {/* Link Đánh giá */}
                                 {canReview && (
                                     <Link
                                         to={`/review/${order.id}`}
-                                        style={{color: 'orange', fontWeight: 'bold'}}
+                                        className={styles.reviewLink}
                                     >
                                         (Đánh giá)
                                     </Link>
                                 )}
                                 {order.isReviewed && (
-                                    <span style={{color: 'gray'}}>(Đã đánh giá)</span>
+                                    <span className={styles.reviewedText}>(Đã đánh giá)</span>
                                 )}
                             </td>
                         </tr>

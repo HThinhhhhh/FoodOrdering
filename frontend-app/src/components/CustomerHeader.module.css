@@ -1,0 +1,110 @@
+/* --- SỬA ĐỔI: .brandLink span và thêm .brandLogo (nếu có logo riêng) --- */
+.navStyle {
+    padding: 0 20px;
+    height: 70px;
+    background: var(--card-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.brand {
+    flex-shrink: 0;
+}
+.brandLink {
+    text-decoration: none;
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 1.5em;
+    display: flex;
+    align-items: center;
+}
+
+/* --- THAY ĐỔI: Logo trong Header (nhỏ gọn) --- */
+.brandLogo { /* Nếu bạn có logoUrl riêng */
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+    margin-right: 8px; /* Khoảng cách với tên nhà hàng nếu có */
+}
+.brandLink span {
+    line-height: 1;
+    color: var(--text-primary); /* Đảm bảo tên nhà hàng có màu dễ nhìn */
+}
+/* --- KẾT THÚC THAY ĐỔI --- */
+
+.navLinks {
+    flex-grow: 1;
+    margin-left: 30px;
+}
+.contactLinks {
+    flex-shrink: 0;
+}
+.userSection {
+    flex-shrink: 0;
+    margin-left: 20px;
+}
+
+.linkStyle {
+    margin-right: 15px;
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 500;
+    transition: color 0.2s;
+    padding: 5px;
+}
+.linkStyle:hover {
+    color: var(--primary-color);
+}
+
+.socialLinkStyle {
+    margin-left: 15px;
+    text-decoration: none;
+    color: var(--secondary-color);
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+.userActions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.username {
+    font-size: 0.95em;
+    color: var(--text-secondary);
+}
+
+.userPasswordLink {
+    text-decoration: underline;
+    color: var(--text-secondary);
+    font-weight: normal;
+    font-size: 0.9em;
+    transition: color 0.2s;
+}
+.userPasswordLink:hover {
+    color: var(--primary-color);
+}
+
+.buttonStyle {
+    cursor: pointer;
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    text-decoration: none;
+    font-size: 0.9em;
+    font-family: inherit;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+.buttonStyle:hover {
+    background-color: #c82333;
+}

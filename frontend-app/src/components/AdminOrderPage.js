@@ -5,6 +5,9 @@ import SockJS from 'sockjs-client';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useNavigate } from 'react-router-dom';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './AdminOrderPage.module.css';
+
 const API_URL = process.env.REACT_APP_API_URL;
 const BACKEND_WS_URL = `${API_URL}/ws`;
 
@@ -13,28 +16,11 @@ const ALL_STATUSES = [
     'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'
 ];
 
-// (CSS)
-const styles = {
-    container: { padding: '20px' },
-    filters: { marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    th: { background: '#f4f4f4', padding: '8px', border: '1px solid #ddd', textAlign: 'left' },
-    td: { padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' },
-    note: { fontSize: '0.9em', fontStyle: 'italic', color: 'gray', margin: '2px 0 0 10px', whiteSpace: 'pre-wrap' },
-    // --- THÊM STYLE MỚI CHO TÙY CHỌN ---
-    options: { fontSize: '0.9em', fontStyle: 'italic', color: '#c0392b', margin: '2px 0 0 10px', fontWeight: 'bold' },
-    // --- KẾT THÚC THÊM ---
-    internalNote: { fontSize: '0.9em', fontStyle: 'italic', color: 'blue', margin: '2px 0 0 10px', fontWeight: 'bold', whiteSpace: 'pre-wrap' },
-    actionButton: { padding: '5px 10px', fontSize: '0.9em', cursor: 'pointer', border: 'none', color: 'white', borderRadius: '4px', marginRight: '5px', marginBottom: '5px' },
-    btnConfirm: { backgroundColor: '#27ae60' },
-    btnDeliver: { backgroundColor: '#2980b9' },
-    btnComplete: { backgroundColor: '#7f8c8d' },
-    btnCancel: { backgroundColor: '#c0392b' },
-    btnNote: { backgroundColor: '#555' },
-    btnEdit: { backgroundColor: '#f39c12' },
-};
+// --- 2. XÓA BỎ 'const styles = { ... }' ---
+// (Đã xóa)
 
 export const AdminOrderPage = () => {
+    // (State và logic hooks giữ nguyên)
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -43,6 +29,7 @@ export const AdminOrderPage = () => {
     const navigate = useNavigate();
 
     // (Tất cả các hàm xử lý (handlers) và useEffect giữ nguyên)
+    // ...
     const fetchOrders = async (filter) => {
         setLoading(true);
         try {
@@ -136,20 +123,22 @@ export const AdminOrderPage = () => {
             }
         }
     };
+    // ...
 
+    // --- 3. SỬA ĐỔI RENDER ACTIONS (dùng className) ---
     const renderAdminActions = (order) => {
         const isLocked = order.status === 'COMPLETED' || order.status === 'CANCELLED';
         const isDelivering = order.status === 'DELIVERING';
         return (
             <div>
                 {order.status === 'PENDING_CONFIRMATION' && (
-                    <button style={{...styles.actionButton, ...styles.btnConfirm}}
+                    <button className={styles.btnConfirm}
                             onClick={() => handleUpdateStatus(order.id, 'RECEIVED')}>
                         ✅ Xác nhận (Gửi Bếp)
                     </button>
                 )}
                 {order.status === 'READY' && (
-                    <button style={{...styles.actionButton, ...styles.btnDeliver}}
+                    <button className={styles.btnDeliver}
                             onClick={() => {
                                 const note = prompt("Nhập thông tin giao hàng (Shipper, SĐT, v.v.):", order.deliveryNote || "");
                                 if (note !== null && note.trim() !== "") {
@@ -162,30 +151,31 @@ export const AdminOrderPage = () => {
                     </button>
                 )}
                 {isDelivering && (
-                    <button style={{...styles.actionButton, ...styles.btnComplete}}
+                    <button className={styles.btnComplete}
                             onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}>
                         🏁 Hoàn thành
                     </button>
                 )}
                 {!isLocked && (
-                    <button style={{...styles.actionButton, ...styles.btnCancel}}
+                    <button className={styles.btnCancel}
                             onClick={() => handleCancelOrder(order.id)}>
                         Hủy
                     </button>
                 )}
                 {order.status === 'PENDING_CONFIRMATION' && (
-                    <button style={{...styles.actionButton, ...styles.btnEdit}}
+                    <button className={styles.btnEdit}
                             onClick={() => navigate(`/restaurant/admin/order/edit/${order.id}`)}>
                         Sửa
                     </button>
                 )}
                 {!isDelivering && !isLocked && (
-                    <button style={{...styles.actionButton, ...styles.btnDeliver, opacity: 0.8}}
+                    <button className={`${styles.btnDeliver} ${styles.actionButton}`}
+                            style={{opacity: 0.8}} // Giữ lại style này vì nó là tạm thời
                             onClick={() => handleAddDeliveryNote(order.id, order.deliveryNote)}>
                         Note Giao hàng (Khách)
                     </button>
                 )}
-                <button style={{...styles.actionButton, ...styles.btnNote}}
+                <button className={styles.btnNote}
                         onClick={() => handleAddEmployeeNote(order.id)}>
                     Note Nội bộ (NV)
                 </button>
@@ -194,10 +184,11 @@ export const AdminOrderPage = () => {
     };
 
     return (
-        <div style={styles.container}>
+        // --- 4. SỬ DỤNG className ---
+        <div className={styles.container}>
             <h2>Quản lý Đơn hàng (Tổng: {orders.length})</h2>
 
-            <div style={styles.filters}>
+            <div className={styles.filters}>
                 <label>Lọc theo trạng thái:</label>
                 <select value={statusFilter} onChange={handleFilterChange}>
                     <option value="ALL">Tất cả</option>
@@ -208,59 +199,54 @@ export const AdminOrderPage = () => {
             {loading && <p>Đang tải đơn hàng...</p>}
             {error && <p style={{ color: 'red' }}>{error}</p>}
 
-            <table style={styles.table}>
+            <table className={styles.table}>
                 <thead>
                 <tr>
-                    <th style={styles.th}>Mã Đơn / Khách hàng</th>
-                    <th style={styles.th}>Chi tiết Món ăn</th>
-                    <th style={styles.th}>Giao hàng / Ghi chú</th>
-                    <th style={styles.th}>Tổng tiền</th>
-                    <th style={styles.th}>Trạng thái</th>
-                    <th style={styles.th}>Hành động</th>
+                    <th>Mã Đơn / Khách hàng</th>
+                    <th>Chi tiết Món ăn</th>
+                    <th>Giao hàng / Ghi chú</th>
+                    <th>Tổng tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
                 {orders.map(order => (
-                    <tr key={order.id} style={{background: order.status === 'PENDING_CONFIRMATION' ? '#fff8e1' : 'white'}}>
-                        <td style={styles.td}>
+                    <tr key={order.id} className={order.status === 'PENDING_CONFIRMATION' ? styles.pendingRow : ''}>
+                        <td>
                             <strong>#{order.id}</strong>
                             <div style={{fontSize: '0.9em'}}>{new Date(order.orderTime).toLocaleString()}</div>
-                            <div style={{marginTop: '10px', borderTop: '1px dashed #ccc', paddingTop: '5px'}}>
+                            <div className={styles.customerInfo}>
                                 <div><strong>{order.customerName}</strong></div>
                                 <div>{order.customerPhone}</div>
                             </div>
                         </td>
-                        <td style={styles.td}>
-                            {/* --- BẮT ĐẦU SỬA ĐỔI --- */}
+                        <td>
                             {order.items.map((item, index) => (
-                                <div key={index}>
+                                <div key={index} className={styles.orderItem}>
                                     <strong>{item.quantity} x {item.name}</strong>
-                                    {/* Hiển thị tùy chọn (nếu có) */}
                                     {item.selectedOptionsText && (
-                                        <div style={styles.options}>
+                                        <div className={styles.options}>
                                             ↳ {item.selectedOptionsText}
                                         </div>
                                     )}
-                                    {item.note && <div style={styles.note}>↳ Ghi chú KH: {item.note}</div>}
+                                    {item.note && <div className={styles.note}>↳ Ghi chú KH: {item.note}</div>}
                                 </div>
                             ))}
-                            {/* --- KẾT THÚC SỬA ĐỔI --- */}
                         </td>
-                        <td style={styles.td}>
+                        <td>
                             <div>{order.deliveryAddress}</div>
-                            {order.shipperNote && <div style={styles.note}>Ghi chú KH (Shipper): {order.shipperNote}</div>}
-                            {order.deliveryNote && <div style={{...styles.note, color: 'green', fontWeight: 'bold'}}>Note Giao hàng: {order.deliveryNote}</div>}
-                            {order.kitchenNote && <div style={styles.internalNote}>Note Bếp: {order.kitchenNote}</div>}
-                            {order.employeeNote && <div style={styles.internalNote}>Note NV/Admin: {order.employeeNote}</div>}
+                            {order.shipperNote && <div className={styles.note}>Ghi chú KH (Shipper): {order.shipperNote}</div>}
+                            {order.deliveryNote && <div className={styles.deliveryNote}>Note Giao hàng: {order.deliveryNote}</div>}
+                            {order.kitchenNote && <div className={styles.internalNote}>Note Bếp: {order.kitchenNote}</div>}
+                            {order.employeeNote && <div className={styles.internalNote}>Note NV/Admin: {order.employeeNote}</div>}
                         </td>
-                        <td style={styles.td}>{formatCurrency(order.grandTotal)}</td>
-                        <td style={styles.td}>
-                            <strong style={{color: order.status === 'CANCELLED' ? 'red' : 'inherit'}}>
-                                {order.status}
-                            </strong>
-                            {order.cancellationReason && <div style={{...styles.note, color: 'red'}}>{order.cancellationReason}</div>}
+                        <td>{formatCurrency(order.grandTotal)}</td>
+                        <td className={order.status === 'CANCELLED' ? styles.statusCellCancelled : styles.statusCell}>
+                            <strong>{order.status}</strong>
+                            {order.cancellationReason && <div className={styles.cancellationReason}>{order.cancellationReason}</div>}
                         </td>
-                        <td style={styles.td}>
+                        <td className={styles.actionsCell}>
                             {renderAdminActions(order)}
                         </td>
                     </tr>

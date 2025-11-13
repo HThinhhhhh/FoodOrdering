@@ -13,7 +13,7 @@ public class MenuItemAdminRequestDTO {
     private String imageUrl;
     private MenuItemCategory category;
     private MenuItemStatus status;
-    private boolean isVegetarian;
-    private boolean isSpicy;
-    private boolean isPopular;
+    private boolean vegetarian;
+    private boolean spicy;
+    private boolean popular;
 }

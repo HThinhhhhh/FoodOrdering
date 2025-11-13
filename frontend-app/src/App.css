@@ -1,0 +1,48 @@
+/*
+ * Bố cục cho trang Khách hàng (Menu và Giỏ hàng)
+ */
+.diner-layout {
+    display: flex;
+    flex-wrap: wrap; /* Cho phép xuống hàng trên di động */
+    gap: 20px;
+    padding: 20px; /* Tăng padding */
+    max-width: 1300px; /* Tinh chỉnh max-width */
+    margin: 0 auto; /* Căn giữa layout */
+}
+
+.diner-menu-column {
+    flex: 2; /* 2 phần */
+    min-width: 400px; /* Đảm bảo cột menu không quá hẹp */
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+}
+
+.diner-cart-column {
+    flex: 1; /* 1 phần */
+    min-width: 300px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 20px;
+
+    position: sticky;
+
+    /* --- THAY ĐỔI: Đồng bộ vị trí sticky --- */
+    /* 70px (Header) + 20px (padding layout) = 90px */
+    top: 90px;
+    max-height: calc(100vh - 110px); /* 90px (top) + 20px (padding bottom) */
+    /* --- KẾT THÚC THAY ĐỔI --- */
+
+    overflow-y: auto;
+}
+
+/* CSS cho các thanh <hr /> */
+.app-divider {
+    border: 0;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 0;
+}

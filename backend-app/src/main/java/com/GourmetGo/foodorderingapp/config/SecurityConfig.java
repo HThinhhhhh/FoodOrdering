@@ -87,6 +87,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // === PUBLIC ===
                         .requestMatchers(HttpMethod.GET, "/api/menu").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/settings").permitAll()
                         .requestMatchers("/api/auth/employee/**").permitAll()
                         .requestMatchers("/api/auth/me").permitAll()
 

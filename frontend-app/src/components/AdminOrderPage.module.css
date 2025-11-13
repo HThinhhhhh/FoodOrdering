@@ -1,0 +1,145 @@
+.container {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.filters {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+.filters label {
+    font-weight: bold;
+}
+.filters select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+.table th,
+.table td {
+    padding: 12px 10px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+    text-align: left;
+}
+.table th {
+    background: #f4f4f4;
+}
+
+.pendingRow {
+    background: #fff8e1;
+}
+
+/* --- Styles cho nội dung cell --- */
+.customerInfo {
+    margin-top: 10px;
+    border-top: 1px dashed #ccc;
+    padding-top: 5px;
+}
+.customerInfo div {
+    margin-bottom: 2px;
+}
+
+.orderItem {
+    margin-bottom: 5px;
+}
+
+.note {
+    font-size: 0.9em;
+    font-style: italic;
+    color: gray;
+    margin: 2px 0 0 10px;
+    white-space: pre-wrap;
+}
+
+.options {
+    font-size: 0.9em;
+    font-style: italic;
+    color: #c0392b;
+    margin: 2px 0 0 10px;
+    font-weight: bold;
+    white-space: pre-wrap;
+}
+
+.internalNote {
+    font-size: 0.9em;
+    font-style: italic;
+    color: blue;
+    margin: 2px 0 0 10px;
+    font-weight: bold;
+    white-space: pre-wrap;
+}
+.deliveryNote {
+    composes: internalNote;
+    color: green;
+}
+
+.statusCell strong {
+    font-size: 1.1em;
+}
+.statusCell.cancelled strong {
+    color: #c0392b;
+}
+.cancellationReason {
+    composes: note;
+    color: #c0392b;
+    font-style: normal;
+}
+
+.actionsCell {
+    min-width: 150px;
+}
+
+.actionButton {
+    padding: 5px 10px;
+    font-size: 0.9em;
+    cursor: pointer;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    transition: opacity 0.2s;
+}
+.actionButton:hover {
+    opacity: 0.8;
+}
+
+.btnConfirm {
+    composes: actionButton;
+    background-color: #27ae60;
+}
+.btnDeliver {
+    composes: actionButton;
+    background-color: #2980b9;
+}
+.btnComplete {
+    composes: actionButton;
+    background-color: #7f8c8d;
+}
+.btnCancel {
+    composes: actionButton;
+    background-color: #c0392b;
+}
+.btnNote {
+    composes: actionButton;
+    background-color: #555;
+}
+.btnEdit {
+    composes: actionButton;
+    background-color: #f39c12;
+}

@@ -6,34 +6,30 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './Cart.module.css';
+
 const API_URL = process.env.REACT_APP_API_URL;
 
-const buttonStyle = {
-    marginLeft: '5px',
-    marginRight: '5px',
-    padding: '2px 8px',
-    cursor: 'pointer',
-    fontWeight: 'bold',
-};
+// --- 2. XÓA BIẾN buttonStyle ---
+// (Đã xóa)
 
 export const Cart = () => {
-    // --- SỬA ĐỔI: Lấy subtotal và các hàm mới từ context ---
     const {
         cartItems,
         subtotal,
         voucherError,
-        updateCartItemQuantity, // Hàm mới
-        updateCartItemNote,    // Hàm mới
-        removeFromCart         // Hàm mới (nhận cartItemId)
+        updateCartItemQuantity,
+        updateCartItemNote,
+        removeFromCart
     } = useCart();
-    // --- KẾT THÚC SỬA ĐỔI ---
 
     const { currentUser } = useAuth();
     const navigate = useNavigate();
-
-    // (Logic kiểm tra activeOrderCount giữ nguyên)
     const [activeOrderCount, setActiveOrderCount] = useState(0);
     const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+
+    // (useEffect kiểm tra đơn hàng active giữ nguyên)
     useEffect(() => {
         if (!currentUser) {
             setIsLoadingOrders(false);
@@ -80,19 +76,10 @@ export const Cart = () => {
             <Link
                 to="/checkout"
                 onClick={(e) => { if (isDisabled) e.preventDefault(); }}
+                // --- 3. SỬ DỤNG className (có điều kiện) ---
+                className={isDisabled ? styles.checkoutButtonDisabled : styles.checkoutButton}
                 style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '10px 0',
-                    marginTop: '15px',
-                    textAlign: 'center',
-                    backgroundColor: isDisabled ? '#ccc' : 'green',
-                    color: 'white',
-                    textDecoration: 'none',
-                    borderRadius: '5px',
-                    fontWeight: 'bold',
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    pointerEvents: isDisabled ? 'none' : 'auto'
+                    /* Xóa tất cả style inline cũ */
                 }}
                 title={title}
             >
@@ -102,67 +89,67 @@ export const Cart = () => {
     };
 
     return (
-        <div>
+        // --- 4. SỬ DỤNG className ---
+        <div className={styles.cartContainer}>
             <h4>Giỏ hàng</h4>
             {cartItems.length === 0 ? (
-                <p>Giỏ hàng của bạn đang trống.</p>
+                <p className={styles.emptyCart}>Giỏ hàng của bạn đang trống.</p>
             ) : (
-                <ul style={{listStyle: 'none', paddingLeft: 0}}>
-                    {/* --- SỬA ĐỔI: LẶP QUA GIỎ HÀNG MỚI --- */}
+                <ul className={styles.cartList}>
                     {cartItems.map(item => (
-                        <li key={item.cartItemId} style={{ marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-                            <strong>{item.name}</strong>
+                        <li key={item.cartItemId} className={styles.cartItem}>
+                            <strong className={styles.itemName}>{item.name}</strong>
 
                             {/* Hiển thị tùy chọn đã chọn */}
                             {item.selectedOptionsText && (
-                                <div style={{fontSize: '0.9em', color: 'gray'}}>
+                                <div className={styles.itemOptions}>
                                     ↳ {item.selectedOptionsText}
                                 </div>
                             )}
 
-                            {/* Ghi chú cho món ăn (cập nhật bằng cartItemId) */}
+                            {/* Ghi chú cho món ăn */}
                             <input
                                 type="text"
                                 placeholder="Ghi chú cho món này..."
                                 value={item.note}
                                 onChange={(e) => updateCartItemNote(item.cartItemId, e.target.value)}
-                                style={{width: '95%', fontSize: '0.9em', marginTop: '5px', padding: '3px'}}
+                                className={styles.itemNoteInput}
                             />
 
-                            {/* Cập nhật số lượng (cập nhật bằng cartItemId) */}
-                            <div>
-                                <button
-                                    style={buttonStyle}
-                                    onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity - 1)}
-                                >
-                                    -
-                                </button>
-                                <span>{item.quantity}</span>
-                                <button
-                                    style={buttonStyle}
-                                    onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity + 1)}
-                                >
-                                    +
-                                </button>
-                                <span style={{ marginLeft: '15px' }}>
-                                    {/* Giá cuối cùng (đã tính options) * số lượng */}
+                            {/* Cập nhật số lượng */}
+                            <div className={styles.quantityControls}>
+                                <div>
+                                    <button
+                                        className={styles.stepperButton}
+                                        onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity - 1)}
+                                    >
+                                        -
+                                    </button>
+                                    <span>{item.quantity}</span>
+                                    <button
+                                        className={styles.stepperButton}
+                                        onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity + 1)}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <span className={styles.itemPrice}>
                                     {formatCurrency(item.finalPrice * item.quantity)}
                                 </span>
                             </div>
                         </li>
                     ))}
-                    {/* --- KẾT THÚC SỬA ĐỔI --- */}
                 </ul>
             )}
 
-            <strong>Tổng cộng: {formatCurrency(subtotal)}</strong>
+            <strong className={styles.subtotal}>Tổng cộng: {formatCurrency(subtotal)}</strong>
 
-            {voucherError && <small style={{color: 'red', display: 'block'}}>{voucherError}</small>}
+            {voucherError && <small className={styles.voucherError}>{voucherError}</small>}
 
             {renderCheckoutButton()}
 
             {currentUser && !isLoadingOrders && (
-                <p style={{textAlign: 'center', fontSize: '0.9em', color: '#555'}}>
+                <p className={styles.activeOrders}>
                     Đơn hàng đang xử lý: {activeOrderCount} / 3
                 </p>
             )}

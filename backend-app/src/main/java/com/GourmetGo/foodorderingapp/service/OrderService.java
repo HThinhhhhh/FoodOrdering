@@ -68,26 +68,21 @@ public class OrderService {
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
         orderDto.put("id", order.getId());
-        orderDto.put("status", order.getStatus().toString());
-        orderDto.put("pickupWindow", order.getPickupWindow());
         orderDto.put("userId", order.getCustomer().getId());
-        orderDto.put("customerName", order.getCustomer().getName());
-        orderDto.put("customerPhone", order.getCustomer().getPhoneNumber());
+        orderDto.put("status", order.getStatus().toString());
         orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
+        orderDto.put("deliveryNote", order.getDeliveryNote()); // (Ghi chú của Admin/NV giao hàng)
         orderDto.put("paymentMethod", order.getPaymentMethod());
         orderDto.put("subtotal", order.getSubtotal());
         orderDto.put("vatAmount", order.getVatAmount());
         orderDto.put("shippingFee", order.getShippingFee());
+        orderDto.put("discountAmount", order.getDiscountAmount());
         orderDto.put("grandTotal", order.getGrandTotal());
         orderDto.put("isReviewed", order.isReviewed());
-        orderDto.put("deliveryRating", order.getDeliveryRating());
-        orderDto.put("deliveryComment", order.getDeliveryComment());
         orderDto.put("cancellationReason", order.getCancellationReason());
-        orderDto.put("kitchenNote", order.getKitchenNote());
-        orderDto.put("deliveryNote", order.getDeliveryNote());
-        orderDto.put("employeeNote", order.getEmployeeNote());
+        orderDto.put("customerPhone", order.getCustomer().getPhoneNumber()); // (Thêm cho AdminReviewPage)
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();
@@ -95,6 +90,12 @@ public class OrderService {
             itemMap.put("quantity", item.getQuantity());
             itemMap.put("note", item.getNote());
             itemMap.put("name", item.getMenuItem().getName());
+
+            // --- THÊM 2 DÒNG CÒN THIẾU ---
+            itemMap.put("pricePerUnit", item.getPricePerUnit());
+            itemMap.put("selectedOptionsText", item.getSelectedOptionsText());
+            // --- KẾT THÚC THÊM MỚI ---
+
             return itemMap;
         }).collect(Collectors.toList());
 

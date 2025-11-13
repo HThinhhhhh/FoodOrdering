@@ -27,9 +27,9 @@ public class MenuItem implements Serializable{
     private String description;
     @Column(nullable = false)
     private BigDecimal price;
-    private boolean isVegetarian;
-    private boolean isSpicy;
-    private boolean isPopular;
+    private boolean vegetarian;
+    private boolean spicy;
+    private boolean popular;
 
     @Column(nullable = true, length = 1024)
     private String imageUrl;

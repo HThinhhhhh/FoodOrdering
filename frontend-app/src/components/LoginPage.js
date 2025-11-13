@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 
+// --- 1. IMPORT CSS MODULE ---
+import styles from './Form.module.css';
+
 export const LoginPage = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    // --- 1. SỬA: LẤY ĐÚNG HÀM ---
     const { customerLogin, currentUser } = useAuth();
     const navigate = useNavigate();
 
@@ -20,7 +22,6 @@ export const LoginPage = () => {
         e.preventDefault();
         setError('');
         try {
-            // --- 2. SỬA: GỌI ĐÚNG HÀM ---
             const user = await customerLogin(phoneNumber, password);
 
             if (user.role === 'DINER') {
@@ -34,21 +35,32 @@ export const LoginPage = () => {
     };
 
     return (
-        <div style={{ padding: '20px', maxWidth: '400px', margin: 'auto' }}>
+        // --- 2. SỬ DỤNG className ---
+        <div className={styles.formContainer}>
             <h2>Đăng nhập Khách hàng</h2>
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Số điện thoại: </label>
-                    <input type="text" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Số điện thoại: </label>
+                    <input
+                        type="text"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className={styles.formInput}
+                    />
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                    <label>Mật khẩu: </label>
-                    <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '8px' }} />
+                <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Mật khẩu: </label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={styles.formInput}
+                    />
                 </div>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                <button type="submit" style={{ marginTop: '20px', padding: '10px 15px' }}>Đăng nhập</button>
+                {error && <p className={styles.formError}>{error}</p>}
+                <button type="submit" className={styles.formButton}>Đăng nhập</button>
             </form>
-            <p>
+            <p className={styles.formLink}>
                 Chưa có tài khoản? <Link to="/register">Đăng ký ngay</Link>
             </p>
         </div>

@@ -2,84 +2,47 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatCurrency } from '../utils/formatCurrency';
+import styles from './Table.module.css';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-// (CSS)
-const styles = {
-    container: { padding: '20px' },
-    linkButton: {
-        display: 'inline-block',
-        padding: '10px 15px',
-        background: 'blue',
-        color: 'white',
-        textDecoration: 'none',
-        borderRadius: '5px',
-        fontWeight: 'bold',
-        marginBottom: '20px'
-    },
-    // --- THÊM MỚI BỘ LỌC ---
-    filters: {
-        marginBottom: '15px',
-        padding: '10px',
-        background: '#f0f0f0',
-        borderRadius: '5px',
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'center'
-    },
-    // --- KẾT THÚC THÊM MỚI ---
-    table: { width: '100%', borderCollapse: 'collapse' },
-    th: { background: '#f4f4f4', padding: '8px', border: '1px solid #ddd', textAlign: 'left' },
-    td: { padding: '8px', border: '1px solid #ddd' },
-    actionButton: { marginRight: '5px', padding: '3px 8px', cursor: 'pointer' },
-    editButton: { background: 'green', color: 'white', border: 'none' },
-    deleteButton: { background: 'red', color: 'white', border: 'none' },
-    rating: { color: 'gold', fontWeight: 'bold', fontSize: '0.9em' }
-};
-
-// Component Star (chỉ hiển thị)
+// (Component Stars, getToday, get30DaysAgo giữ nguyên)
 const Stars = ({ rating }) => {
-    if (!rating || rating === 0) return <span style={{color: 'gray'}}>Chưa có</span>;
+    if (!rating || rating === 0) return <span className={styles.ratingEmpty}>Chưa có</span>;
     const fullStars = Math.floor(rating);
     const halfStar = rating % 1 >= 0.5 ? 1 : 0;
     const emptyStars = 5 - fullStars - halfStar;
     return (
-        <span style={styles.rating}>
+        <span className={styles.rating}>
             {'★'.repeat(fullStars)}
             {halfStar ? '½' : ''}
             {'☆'.repeat(emptyStars)}
         </span>
     );
 };
-
-// Hàm lấy ngày (YYYY-MM-DD)
 const getToday = () => new Date().toISOString().split('T')[0];
-// Hàm lấy ngày 30 ngày trước
 const get30DaysAgo = () => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
     return date.toISOString().split('T')[0];
 };
+// ...
 
 export const AdminMenuPage = () => {
+    // (Tất cả state và logic (fetchData, handleDelete) giữ nguyên)
+    // ...
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const [reviewStats, setReviewStats] = useState(new Map());
-
-    // --- 1. THÊM STATE CHO BỘ LỌC NGÀY ---
     const [startDate, setStartDate] = useState(get30DaysAgo());
     const [endDate, setEndDate] = useState(getToday());
     const [showAllTime, setShowAllTime] = useState(false);
-    // --- KẾT THÚC THÊM STATE ---
 
-    // --- 2. CẬP NHẬT HÀM TẢI DỮ LIỆU ---
     const fetchData = async (useDates) => {
         setLoading(true);
         try {
-            // Chuẩn bị params cho API stats
             const statsParams = (useDates && startDate && endDate)
                 ? { startDate, endDate }
                 : {};
@@ -104,35 +67,27 @@ export const AdminMenuPage = () => {
     };
 
     useEffect(() => {
-        // Tải lần đầu (mặc định 30 ngày)
         fetchData(true);
     }, []);
 
-    // --- 3. THÊM HÀM XỬ LÝ LỌC ---
     const handleFilterClick = () => {
-        fetchData(!showAllTime); // Chỉ gửi ngày nếu không chọn "Tất cả"
+        fetchData(!showAllTime);
     };
 
     const handleToggleAllTime = (e) => {
         const checked = e.target.checked;
         setShowAllTime(checked);
         if (checked) {
-            // Nếu chọn "Tất cả", gọi API không cần ngày
             fetchData(false);
         } else {
-            // Nếu bỏ chọn "Tất cả", gọi API với ngày đã chọn
             fetchData(true);
         }
     };
-    // --- KẾT THÚC THÊM HÀM ---
 
-    // (Hàm handleDelete giữ nguyên - sử dụng "Xóa mềm")
     const handleDelete = async (itemId, itemName) => {
         if (window.confirm(`Bạn có chắc chắn muốn XÓA (Ngừng bán) món "${itemName}" không?`)) {
             try {
-                // API DELETE này đã được sửa ở backend (MenuService)
                 await axios.delete(`${API_URL}/api/admin/menu/${itemId}`);
-
                 setMenuItems(prevItems =>
                     prevItems.map(item =>
                         item.id === itemId ? { ...item, status: 'DISCONTINUED' } : item
@@ -144,21 +99,23 @@ export const AdminMenuPage = () => {
             }
         }
     };
+    // ...
+
 
     if (loading) return <p>Đang tải thực đơn...</p>;
     if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
     return (
-        <div style={styles.container}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className={styles.container}>
+            <div className={styles.header}>
                 <h2>Quản lý Thực đơn</h2>
-                <Link to="/restaurant/admin/menu/new" style={styles.linkButton}>
+                <Link to="/restaurant/admin/menu/new" className={styles.linkButton}>
                     + Thêm món mới
                 </Link>
             </div>
 
-            {/* --- 4. THÊM GIAO DIỆN BỘ LỌC --- */}
-            <div style={styles.filters}>
+            {/* (Filter giữ nguyên) */}
+            <div className={styles.filters}>
                 <strong>Lọc Thống kê Đánh giá:</strong>
                 <label>Từ ngày:</label>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={showAllTime} />
@@ -172,47 +129,55 @@ export const AdminMenuPage = () => {
                     Xem tất cả (All time)
                 </label>
             </div>
-            {/* --- KẾT THÚC THÊM GIAO DIỆN --- */}
 
-            <table style={styles.table}>
+            <table className={styles.table}>
                 <thead>
                 <tr>
-                    <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Tên món</th>
-                    <th style={styles.th}>Danh mục</th>
-                    <th style={styles.th}>Giá</th>
-                    {/* --- 3. THÊM CỘT MỚI --- */}
-                    <th style={styles.th}>Đánh giá TB</th>
-                    <th style={styles.th}>Trạng thái</th>
-                    <th style={styles.th}>Hành động</th>
+                    {/* --- THÊM CỘT MỚI --- */}
+                    <th>Ảnh</th>
+                    {/* --- KẾT THÚC --- */}
+                    <th>ID</th>
+                    <th>Tên món</th>
+                    <th>Danh mục</th>
+                    <th>Giá</th>
+                    <th>Đánh giá TB</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
                 {menuItems.map(item => {
-                    // Lấy thống kê cho món này
                     const stats = reviewStats.get(item.id);
+
+                    // (Lưu ý: API /api/admin/menu trả về model,
+                    // nơi chúng ta đã đổi tên 'isPopular' thành 'popular')
 
                     return (
                         <tr key={item.id}>
-                            <td style={styles.td}>{item.id}</td>
-                            <td style={styles.td}>{item.name}</td>
-                            <td style={styles.td}>{item.category}</td>
-                            <td style={styles.td}>{formatCurrency(item.price)}</td>
-
-                            {/* --- 4. HIỂN THỊ ĐÁNH GIÁ --- */}
-                            <td style={styles.td}>
-                                {stats ? (
-                                    <>
-                                        <Stars rating={stats.averageRating} />
-                                        <div>({stats.averageRating.toFixed(1)} / {stats.reviewCount} lượt)</div>
-                                    </>
+                            {/* --- THÊM CELL MỚI --- */}
+                            <td>
+                                {item.imageUrl ? (
+                                    <img src={item.imageUrl} alt={item.name} className={styles.menuImage} />
                                 ) : (
-                                    <span style={{color: 'gray'}}>Chưa có</span>
+                                    <div className={styles.menuImagePlaceholder}>Ảnh</div>
                                 )}
                             </td>
                             {/* --- KẾT THÚC --- */}
-
-                            <td style={styles.td}>
+                            <td>{item.id}</td>
+                            <td>{item.name}</td>
+                            <td>{item.category}</td>
+                            <td>{formatCurrency(item.price)}</td>
+                            <td>
+                                {stats ? (
+                                    <>
+                                        <Stars rating={stats.averageRating} />
+                                        <div className={styles.ratingCount}>({stats.averageRating.toFixed(1)} / {stats.reviewCount} lượt)</div>
+                                    </>
+                                ) : (
+                                    <span className={styles.ratingEmpty}>Chưa có</span>
+                                )}
+                            </td>
+                            <td>
                                     <span style={{
                                         color: item.status === 'ON_SALE' ? 'green' : (item.status === 'TEMP_OUT_OF_STOCK' ? 'orange' : 'red'),
                                         fontWeight: 'bold'
@@ -220,16 +185,16 @@ export const AdminMenuPage = () => {
                                         {item.status}
                                     </span>
                             </td>
-                            <td style={styles.td}>
+                            <td>
                                 <button
-                                    style={{...styles.actionButton, ...styles.editButton}}
+                                    className={styles.editButton}
                                     onClick={() => navigate(`/restaurant/admin/menu/edit/${item.id}`)}
                                 >
                                     Sửa
                                 </button>
                                 {item.status !== 'DISCONTINUED' && (
                                     <button
-                                        style={{...styles.actionButton, ...styles.deleteButton}}
+                                        className={styles.deleteButton}
                                         onClick={() => handleDelete(item.id, item.name)}
                                     >
                                         Xóa (Ẩn)
