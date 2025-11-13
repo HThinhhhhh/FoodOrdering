@@ -2,11 +2,14 @@ package com.GourmetGo.foodorderingapp.repository;
 
 import com.GourmetGo.foodorderingapp.model.Order;
 import com.GourmetGo.foodorderingapp.model.OrderStatus;
+import com.GourmetGo.foodorderingapp.dto.ChartDataDTO;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime; // <-- THÊM IMPORT NÀY
 import java.util.List;
 import java.util.Map; // <-- THÊM IMPORT NÀY (Sửa lỗi 500)
@@ -71,4 +74,33 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     List<Order> findByDeliveryRatingIsNotNullOrderByOrderTimeDesc();
     // --- KẾT THÚC THÊM MỚI ---
+
+    // --- BẮT ĐẦU THÊM MỚI (CHO DASHBOARD) ---
+
+    /**
+     * Tính tổng doanh thu của tất cả các đơn hàng đã HOÀN THÀNH.
+     */
+    @Query("SELECT SUM(o.grandTotal) FROM Order o WHERE o.status = 'COMPLETED'")
+    BigDecimal findTotalRevenueCompleted();
+
+    /**
+     * Đếm số lượng đơn hàng theo một danh sách trạng thái.
+     */
+    Long countByStatusIn(List<OrderStatus> statuses);
+
+    /**
+     * Đếm số lượng đơn hàng theo một trạng thái.
+     */
+    Long countByStatus(OrderStatus status);
+
+    // --- SỬA ĐỔI DÒNG TRUY VẤN NÀY ---
+    /**
+     * (DASHBOARD) Đếm số lượng đơn hàng, nhóm theo Trạng thái
+     */
+    @Query("SELECT new com.GourmetGo.foodorderingapp.dto.ChartDataDTO(STR(o.status), COUNT(o.id)) " + // <-- THÊM STR()
+            "FROM Order o " +
+            "GROUP BY o.status " +
+            "ORDER BY COUNT(o.id) DESC")
+    List<ChartDataDTO> countByStatusGrouped();
+    // --- KẾT THÚC SỬA ĐỔI ---
 }

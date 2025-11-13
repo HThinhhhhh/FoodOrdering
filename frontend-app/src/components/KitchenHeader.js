@@ -59,6 +59,12 @@ export const KitchenHeader = () => {
                     {/* Link cho Quản lý (ADMIN only) */}
                     {currentUser.role === 'ADMIN' && (
                         <>
+                            {/* --- THÊM LINK DASHBOARD TẠI ĐÂY --- */}
+                            <Link to="/restaurant/admin/dashboard" style={{...linkStyle, color: 'green', fontWeight: 'bold'}}>
+                                Dashboard
+                            </Link>
+                            {/* --- KẾT THÚC THÊM MỚI --- */}
+
                             <Link to="/restaurant/admin/menu" style={{...linkStyle, color: 'red'}}>
                                 Quản lý Menu
                             </Link>
@@ -68,7 +74,6 @@ export const KitchenHeader = () => {
                             <Link to="/restaurant/admin/vouchers" style={{...linkStyle, color: 'purple'}}>
                                 Quản lý Voucher
                             </Link>
-                            {/* --- THÊM LINK REVIEW --- */}
                             <Link to="/restaurant/admin/reviews" style={{...linkStyle, color: 'orange'}}>
                                 Quản lý Đánh giá
                             </Link>

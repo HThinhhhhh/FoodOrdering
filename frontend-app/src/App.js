@@ -1,7 +1,5 @@
 import React from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
-
-// (Các import khác giữ nguyên)
 import { Menu } from './components/Menu';
 import { Cart } from './components/Cart';
 import { Checkout } from './components/Checkout';
@@ -26,6 +24,7 @@ import { AdminVoucherPage } from './components/AdminVoucherPage';
 import { VoucherForm } from './components/VoucherForm';
 import { OrderReviewPage } from './components/OrderReviewPage';
 import { AdminReviewPage } from './components/AdminReviewPage';
+import { AdminDashboard } from './components/AdminDashboard';
 
 // (CustomerLayout, KitchenLayout, DinerPage giữ nguyên)
 const CustomerLayout = () => (
@@ -97,6 +96,13 @@ function App() {
                     path=""
                     element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
                 />
+
+                {/* --- THÊM ROUTE DASHBOARD TẠI ĐÂY --- */}
+                <Route
+                    path="admin/dashboard"
+                    element={<AdminRoute><AdminDashboard /></AdminRoute>}
+                />
+                {/* --- KẾT THÚC THÊM --- */}
 
                 {/* (Các route con giữ nguyên cấu trúc tương đối) */}
                 <Route

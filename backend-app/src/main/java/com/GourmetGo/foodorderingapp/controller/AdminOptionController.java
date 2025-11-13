@@ -38,6 +38,23 @@ public class AdminOptionController {
         }
     }
 
+    // --- BẮT ĐẦU THÊM MỚI ---
+    /**
+     * Cập nhật tên hoặc quy tắc (selectionType) của một NHÓM
+     */
+    @PutMapping("/groups/{groupId}")
+    public ResponseEntity<OptionGroup> updateOptionGroup(
+            @PathVariable Long groupId,
+            @RequestBody OptionGroupRequest request) { // DTO này đã có 'name' và 'selectionType'
+        try {
+            OptionGroup updatedGroup = menuService.updateOptionGroup(groupId, request);
+            return ResponseEntity.ok(updatedGroup);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
+    }
+    // --- KẾT THÚC THÊM MỚI ---
+
     /**
      * Xóa một NHÓM TÙY CHỌN (và các mục con của nó)
      */

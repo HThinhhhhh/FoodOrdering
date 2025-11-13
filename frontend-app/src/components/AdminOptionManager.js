@@ -29,6 +29,11 @@ export const AdminOptionManager = ({ menuItemId, groups, onOptionChange }) => {
 
     const [newItemForms, setNewItemForms] = useState({});
 
+    // --- BẮT ĐẦU THÊM MỚI (State để Sửa Group) ---
+    const [editingGroupId, setEditingGroupId] = useState(null); // ID của nhóm đang sửa
+    const [editFormData, setEditFormData] = useState({ name: '', selectionType: '' }); // Dữ liệu form sửa
+    // --- KẾT THÚC THÊM MỚI ---
+
     // --- SỬA ĐỔI: Gửi selectionType khi Thêm Group ---
     const handleAddGroup = async (e) => {
         e.preventDefault();
@@ -103,6 +108,44 @@ export const AdminOptionManager = ({ menuItemId, groups, onOptionChange }) => {
         setLoading(false);
     };
 
+    // --- BẮT ĐẦU THÊM MỚI (Hàm xử lý Sửa Group) ---
+
+    // Bắt đầu sửa (nhấn nút Sửa)
+    const handleStartEditGroup = (group) => {
+        setEditingGroupId(group.id);
+        setEditFormData({ name: group.name, selectionType: group.selectionType });
+    };
+
+    // Hủy sửa
+    const handleCancelEditGroup = () => {
+        setEditingGroupId(null);
+    };
+
+    // Thay đổi input/select trong form sửa
+    const handleEditFormChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Lưu thay đổi (gọi API PUT)
+    const handleSaveEditGroup = async (groupId) => {
+        if (!editFormData.name) {
+            alert("Tên nhóm không được để trống.");
+            return;
+        }
+        setLoading(true);
+        try {
+            // Gọi API PUT mới
+            await axios.put(`${API_URL}/api/admin/options/groups/${groupId}`, editFormData);
+            setEditingGroupId(null); // Thoát chế độ edit
+            onOptionChange(); // Tải lại dữ liệu (quan trọng)
+        } catch (err) {
+            alert("Lỗi khi cập nhật nhóm: " + (err.response?.data || err.message));
+        }
+        setLoading(false);
+    };
+    // --- KẾT THÚC THÊM MỚI ---
+
     const availableLinks = menuItems.filter(m => m.id !== menuItemId);
 
     return (
@@ -111,21 +154,73 @@ export const AdminOptionManager = ({ menuItemId, groups, onOptionChange }) => {
 
             {(groups || []).map(group => (
                 <div key={group.id} style={styles.group}>
-                    <div style={styles.groupHeader}>
-                        <div>
-                            <strong>{group.name}</strong>
-                            {/* Hiển thị loại quy tắc */}
-                            <small style={{color: '#555', marginLeft: '10px'}}>
-                                [Quy tắc: {group.selectionType}]
-                            </small>
+
+                    {/* --- BẮT ĐẦU SỬA ĐỔI (Hiển thị View hoặc Edit) --- */}
+                    {editingGroupId === group.id ? (
+                        // --- Chế độ Sửa (EDITING VIEW) ---
+                        <div style={styles.groupHeader}>
+                            {/* Form Sửa */}
+                            <div style={{...styles.formInline, flex: 1, marginTop: 0}}>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={editFormData.name}
+                                    onChange={handleEditFormChange}
+                                    style={{...styles.input, flex: 2}}
+                                />
+                                <select
+                                    name="selectionType"
+                                    value={editFormData.selectionType}
+                                    onChange={handleEditFormChange}
+                                    style={{...styles.select, flex: 1.5}}
+                                >
+                                    <option value="SINGLE_REQUIRED">Phải chọn 1 (Vd: Size)</option>
+                                    <option value="SINGLE_OPTIONAL">Được chọn 1 (Vd: Sốt)</option>
+                                    <option value="MULTI_SELECT">Được chọn nhiều (Vd: Topping)</option>
+                                </select>
+                            </div>
+                            {/* Nút Sửa */}
+                            <div>
+                                <button
+                                    onClick={() => handleSaveEditGroup(group.id)}
+                                    disabled={loading}
+                                    style={{...styles.button, background: '#27ae60', color: 'white', marginRight: '5px'}}>
+                                    Lưu
+                                </button>
+                                <button
+                                    onClick={handleCancelEditGroup}
+                                    disabled={loading}
+                                    style={{...styles.button, background: '#7f8c8d', color: 'white'}}>
+                                    Hủy
+                                </button>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => handleDeleteGroup(group.id)}
-                            disabled={loading}
-                            style={{...styles.button, ...styles.deleteButton}}>
-                            Xóa Nhóm
-                        </button>
-                    </div>
+                    ) : (
+                        // --- Chế độ Xem (VIEW MODE - như cũ, nhưng thêm nút Sửa) ---
+                        <div style={styles.groupHeader}>
+                            <div>
+                                <strong>{group.name}</strong>
+                                <small style={{color: '#555', marginLeft: '10px'}}>
+                                    [Quy tắc: {group.selectionType}]
+                                </small>
+                            </div>
+                            <div>
+                                <button
+                                    onClick={() => handleStartEditGroup(group)}
+                                    disabled={loading}
+                                    style={{...styles.button, background: '#f39c12', color: 'white', marginRight: '5px'}}>
+                                    Sửa Tên/Quy tắc
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteGroup(group.id)}
+                                    disabled={loading}
+                                    style={{...styles.button, ...styles.deleteButton}}>
+                                    Xóa Nhóm
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {/* --- KẾT THÚC SỬA ĐỔI --- */}
 
                     {/* (Danh sách item con và form thêm item con giữ nguyên) */}
                     <div>

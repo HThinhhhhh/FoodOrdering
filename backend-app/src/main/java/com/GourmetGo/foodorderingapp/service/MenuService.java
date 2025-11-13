@@ -4,6 +4,7 @@ import com.GourmetGo.foodorderingapp.dto.MenuItemAdminRequestDTO;
 import com.GourmetGo.foodorderingapp.dto.MenuItemDTO;
 import com.GourmetGo.foodorderingapp.dto.OptionGroupDTO;
 import com.GourmetGo.foodorderingapp.dto.OptionItemDTO;
+import com.GourmetGo.foodorderingapp.dto.OptionGroupRequest;
 
 import com.GourmetGo.foodorderingapp.model.MenuItem;
 import com.GourmetGo.foodorderingapp.model.OptionGroup;
@@ -139,6 +140,23 @@ public class MenuService {
         return optionGroupRepository.save(newGroup);
     }
     // --- KẾT THÚC SỬA ĐỔI ---
+
+    // --- BẮT ĐẦU THÊM PHƯƠNG THỨC MỚI ---
+    /**
+     * Cập nhật Tên và/hoặc Quy tắc (SelectionType) của một OptionGroup
+     */
+    @Transactional
+    public OptionGroup updateOptionGroup(Long groupId, OptionGroupRequest request) {
+        OptionGroup group = optionGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy OptionGroup ID: " + groupId));
+
+        // Cập nhật các trường từ DTO
+        group.setName(request.getName());
+        group.setSelectionType(request.getSelectionType());
+
+        return optionGroupRepository.save(group);
+    }
+    // --- KẾT THÚC THÊM PHƯƠNG THỨC MỚI ---
 
     @Transactional
     public void deleteOptionGroup(Long groupId) {

@@ -30,7 +30,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             nativeQuery = true)
     List<Map<String, Object>> getMenuItemReviewStats();
 
-    // --- BẮT ĐẦU: THÊM HÀM MỚI ---
     /**
      * (THỐNG KÊ THEO NGÀY) Lấy Rating Trung bình (AVG) và Tổng số (COUNT)
      * TRONG MỘT KHOẢNG THỜI GIAN (dựa trên reviewTime)
@@ -48,5 +47,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
-    // --- KẾT THÚC: THÊM HÀM MỚI ---
+
+    // --- BẮT ĐẦU THÊM MỚI (CHO DASHBOARD) ---
+    /**
+     * Đếm số lượng đánh giá mới kể từ một mốc thời gian
+     */
+    Long countByReviewTimeAfter(LocalDateTime dateTime);
+    // --- KẾT THÚC THÊM MỚI ---
 }

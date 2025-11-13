@@ -200,7 +200,7 @@ public class KitchenService {
         return savedOrder;
     }
 
-    // (Hàm convertOrderToDto giữ nguyên)
+    // --- BẮT ĐẦU SỬA ĐỔI TẠI ĐÂY ---
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
         orderDto.put("id", order.getId());
@@ -233,10 +233,17 @@ public class KitchenService {
             itemMap.put("quantity", item.getQuantity());
             itemMap.put("note", item.getNote());
             itemMap.put("name", item.getMenuItem().getName());
+
+            // --- THÊM 2 DÒNG CÒN THIẾU ---
+            itemMap.put("pricePerUnit", item.getPricePerUnit());
+            itemMap.put("selectedOptionsText", item.getSelectedOptionsText());
+            // --- KẾT THÚC THÊM MỚI ---
+
             return itemMap;
         }).collect(Collectors.toList());
 
         orderDto.put("items", itemDtos);
         return orderDto;
     }
+    // --- KẾT THÚC SỬA ĐỔI ---
 }

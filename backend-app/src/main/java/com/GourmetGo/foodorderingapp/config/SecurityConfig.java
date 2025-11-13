@@ -102,6 +102,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/vouchers/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/reviews/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/options/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/dashboard/**").hasRole("ADMIN")
 
                         // === EMPLOYEE & ADMIN (QUY TẮC CHUNG SAU) ===
                         .requestMatchers("/api/admin/orders/**").hasAnyRole("ADMIN", "EMPLOYEE")

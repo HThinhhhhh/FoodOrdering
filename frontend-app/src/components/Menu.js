@@ -4,26 +4,26 @@ import axios from 'axios';
 import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/formatCurrency';
 import { useMenu } from '../context/MenuContext';
-import { BigDecimal } from 'bigdecimal'; // <-- 1. IMPORT BIGDECIMAL
+import { BigDecimal } from 'bigdecimal';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-// --- COMPONENT MODAL (ĐÃ CẬP NHẬT LOGIC) ---
+// --- COMPONENT MODAL (ĐÃ CẬP NHẬT LOGIC SỐ LƯỢNG) ---
 const OptionModal = ({ item, onClose, onAddToCart }) => {
 
-    // --- SỬA ĐỔI: Khởi tạo State dựa trên Quy tắc ---
+    // --- SỬA ĐỔI STATE ---
     const [selectedOptions, setSelectedOptions] = useState(() => {
         const initialSelections = new Map();
         (item.optionGroups || []).forEach(group => {
             if (group.selectionType === 'SINGLE_REQUIRED' && group.options && group.options.length > 0) {
-                // Tự động chọn mục đầu tiên (thường là "mặc định") cho nhóm BẮT BUỘC
+                // Radio: Tự động chọn mục đầu tiên
                 initialSelections.set(group.id, group.options[0].id);
             }
             if (group.selectionType === 'MULTI_SELECT') {
-                // Đối với checkbox, giá trị là một Set các ID
-                initialSelections.set(group.id, new Set());
+                // Multi-select: Khởi tạo là Map { optionId -> quantity }
+                initialSelections.set(group.id, new Map());
             }
-            // (SINGLE_OPTIONAL mặc định là không chọn gì - null)
+            // (SINGLE_OPTIONAL mặc định là null)
         });
         return initialSelections;
     });
@@ -33,7 +33,7 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
     const [quantity, setQuantity] = useState(1);
     const [validationError, setValidationError] = useState('');
 
-    // --- SỬA ĐỔI: Tính toán giá tiền (Hỗ trợ cả Radio và Checkbox) ---
+    // --- SỬA ĐỔI: TÍNH TOÁN GIÁ (HỖ TRỢ SỐ LƯỢNG OPTION) ---
     let currentPrice = new BigDecimal(item.price.toString()); // Giá gốc
     let optionsText = []; // Chuỗi text cho Bếp
 
@@ -42,16 +42,20 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
         if (!selection) return;
 
         if (group.selectionType === 'MULTI_SELECT') {
-            // selection là một Set (Vd: {3, 4})
-            selection.forEach(selectedItemId => {
+            // selection là một Map (Vd: {3 => 2, 4 => 1})
+            selection.forEach((quantity, selectedItemId) => {
                 const selectedItem = group.options.find(opt => opt.id === selectedItemId);
                 if (selectedItem) {
-                    currentPrice = currentPrice.add(new BigDecimal(selectedItem.price.toString()));
-                    optionsText.push(selectedItem.name);
+                    // Giá = Giá gốc + (Giá option * số lượng option)
+                    const optionPrice = new BigDecimal(selectedItem.price.toString());
+                    const optionQuantity = new BigDecimal(quantity.toString());
+                    currentPrice = currentPrice.add(optionPrice.multiply(optionQuantity));
+
+                    optionsText.push(`${quantity} x ${selectedItem.name}`);
                 }
             });
         } else {
-            // selection là một ID (Vd: 2)
+            // selection là một ID (Vd: 2) - Logic Radio giữ nguyên
             const selectedItem = group.options.find(opt => opt.id === selection);
             if (selectedItem) {
                 currentPrice = currentPrice.add(new BigDecimal(selectedItem.price.toString()));
@@ -64,33 +68,43 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
     const selectedOptionsText = optionsText.join(', ');
     // --- KẾT THÚC TÍNH TOÁN ---
 
-    // --- SỬA ĐỔI: Xử lý chọn (Hỗ trợ cả Radio và Checkbox) ---
-    const handleSelectOption = (groupId, optionItemId, selectionType) => {
+
+    // --- HÀM MỚI: Xử lý chọn Radio ---
+    const handleRadioSelect = (groupId, optionItemId) => {
         setValidationError(''); // Xóa lỗi cũ
         setSelectedOptions(prev => {
             const newSelections = new Map(prev);
-
-            if (selectionType === 'MULTI_SELECT') {
-                const currentSet = newSelections.get(groupId) || new Set();
-                if (currentSet.has(optionItemId)) {
-                    currentSet.delete(optionItemId);
-                } else {
-                    currentSet.add(optionItemId);
-                }
-                newSelections.set(groupId, new Set(currentSet)); // Cập nhật Set
-            } else {
-                // (SINGLE_REQUIRED hoặc SINGLE_OPTIONAL)
-                newSelections.set(groupId, optionItemId); // Chỉ gán ID
-            }
+            newSelections.set(groupId, optionItemId); // Chỉ gán ID
             return newSelections;
         });
     };
-    // --- KẾT THÚC SỬA ĐỔI ---
 
-    // Xử lý khi bấm nút "Thêm vào giỏ"
+    // --- HÀM MỚI: Xử lý tăng/giảm số lượng cho Multi-select ---
+    const handleMultiQuantityChange = (groupId, optionItemId, delta) => {
+        setValidationError('');
+        setSelectedOptions(prev => {
+            const newSelections = new Map(prev);
+            const currentMap = newSelections.get(groupId) || new Map();
+
+            const currentQty = currentMap.get(optionItemId) || 0;
+            const newQty = Math.max(0, currentQty + delta); // Đảm bảo không âm
+
+            if (newQty > 0) {
+                currentMap.set(optionItemId, newQty);
+            } else {
+                currentMap.delete(optionItemId); // Xóa khỏi map nếu số lượng là 0
+            }
+
+            newSelections.set(groupId, new Map(currentMap)); // Cập nhật Map
+            return newSelections;
+        });
+    };
+    // --- KẾT THÚC HÀM MỚI ---
+
+
+    // (Hàm handleConfirmAdd giữ nguyên - logic validation vẫn đúng)
     const handleConfirmAdd = () => {
         setValidationError('');
-        // --- THÊM VALIDATION ---
         for (const group of (item.optionGroups || [])) {
             if (group.selectionType === 'SINGLE_REQUIRED') {
                 if (!selectedOptions.has(group.id) || selectedOptions.get(group.id) === null) {
@@ -129,6 +143,19 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
     };
     const groupStyle = { margin: '10px 0', borderTop: '1px solid #eee', paddingTop: '10px' };
 
+    // --- CSS MỚI CHO STEPPER ---
+    const stepperStyle = {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+    };
+    const stepperButton = {
+        padding: '2px 8px',
+        fontWeight: 'bold',
+        cursor: 'pointer'
+    };
+    // --- KẾT THÚC CSS MỚI ---
+
     return (
         <>
             <div style={overlayStyle} onClick={onClose}></div>
@@ -140,26 +167,54 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
                 {(item.optionGroups || []).map(group => (
                     <div key={group.id} style={groupStyle}>
                         <strong>{group.name}</strong>
-                        {/* --- THÊM LOGIC RENDER (RADIO/CHECKBOX) --- */}
+
+                        {/* --- SỬA ĐỔI LOGIC RENDER --- */}
                         <div>
                             {group.options.map(option => {
                                 const isRadio = group.selectionType === 'SINGLE_REQUIRED' || group.selectionType === 'SINGLE_OPTIONAL';
-                                const isChecked = isRadio
-                                    ? (selectedOptions.get(group.id) === option.id)
-                                    : (selectedOptions.get(group.id)?.has(option.id) || false);
 
-                                return (
-                                    <label key={option.id} style={{display: 'block', margin: '5px 0'}}>
-                                        <input
-                                            type={isRadio ? "radio" : "checkbox"}
-                                            name={`group-${group.id}`}
-                                            checked={isChecked}
-                                            onChange={() => handleSelectOption(group.id, option.id, group.selectionType)}
-                                        />
-                                        {option.name}
-                                        ( +{formatCurrency(option.price)} )
-                                    </label>
-                                );
+                                if (isRadio) {
+                                    // --- LOGIC RENDER RADIO (Như cũ) ---
+                                    const isChecked = selectedOptions.get(group.id) === option.id;
+                                    return (
+                                        <label key={option.id} style={{display: 'block', margin: '5px 0'}}>
+                                            <input
+                                                type="radio"
+                                                name={`group-${group.id}`}
+                                                checked={isChecked}
+                                                onChange={() => handleRadioSelect(group.id, option.id)}
+                                            />
+                                            {option.name}
+                                            ( +{formatCurrency(option.price)} )
+                                        </label>
+                                    );
+                                } else {
+                                    // --- LOGIC RENDER MULTI_SELECT (MỚI) ---
+                                    const currentQty = selectedOptions.get(group.id)?.get(option.id) || 0;
+                                    return (
+                                        <div key={option.id} style={{...stepperStyle, justifyContent: 'space-between', margin: '5px 0'}}>
+                                            <span>
+                                                {option.name}
+                                                ( +{formatCurrency(option.price)} )
+                                            </span>
+                                            <div style={stepperStyle}>
+                                                <button
+                                                    style={stepperButton}
+                                                    onClick={() => handleMultiQuantityChange(group.id, option.id, -1)}
+                                                >
+                                                    -
+                                                </button>
+                                                <span style={{width: '20px', textAlign: 'center'}}>{currentQty}</span>
+                                                <button
+                                                    style={stepperButton}
+                                                    onClick={() => handleMultiQuantityChange(group.id, option.id, 1)}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                }
                             })}
                         </div>
                         {/* --- KẾT THÚC LOGIC RENDER --- */}
@@ -198,6 +253,9 @@ const OptionModal = ({ item, onClose, onAddToCart }) => {
 
 
 
+//
+// Component MENU (không thay đổi)
+//
 export const Menu = () => {
     const [loading, setLoading] = useState(true);
     const [isVegetarian, setIsVegetarian] = useState(false);
@@ -212,24 +270,20 @@ export const Menu = () => {
         }
     }, [menuItems]);
 
-    // --- HÀM MỚI (ĐÃ SỬA): Xử lý khi bấm nút "Thêm" ---
+    // (Hàm này giữ nguyên, nó chỉ mở modal hoặc add thẳng)
     const handleOpenOptions = (item) => {
-        // Nếu món ăn không có tùy chọn (hoặc tùy chọn rỗng)
         if (!item.optionGroups || item.optionGroups.length === 0) {
-            // Thêm thẳng vào giỏ với giá gốc
             addToCart({
                 ...item,
-                finalPrice: item.price, // Giá cuối = giá gốc
-                selectedOptionsText: '', // Không có tùy chọn
+                finalPrice: item.price,
+                selectedOptionsText: '',
                 quantity: 1,
                 note: ''
             });
         } else {
-            // Nếu có tùy chọn, mở Modal
             setSelectedItem(item);
         }
     };
-    // --- KẾT THÚC HÀM MỚI ---
 
     return (
         <div>
@@ -246,7 +300,7 @@ export const Menu = () => {
                 </label>
             </div>
 
-            {/* Danh sách món ăn */}
+            {/* (Danh sách món ăn giữ nguyên) */}
             {loading ? <p>Đang tải...</p> : (
                 <ul style={{listStyle: 'none', paddingLeft: 0}}>
                     {menuItems.map(item => {
@@ -260,7 +314,7 @@ export const Menu = () => {
                                 <p>{item.description}</p>
 
                                 <button
-                                    onClick={() => handleOpenOptions(item)} // <-- SỬA HÀM GỌI
+                                    onClick={() => handleOpenOptions(item)}
                                     disabled={isOutOfStock}
                                 >
                                     {isOutOfStock ? "Tạm hết hàng" : "Thêm vào giỏ"}
@@ -271,7 +325,7 @@ export const Menu = () => {
                 </ul>
             )}
 
-            {/* --- HIỂN THỊ MODAL --- */}
+            {/* (Hiển thị modal giữ nguyên) */}
             {selectedItem && (
                 <OptionModal
                     item={selectedItem}

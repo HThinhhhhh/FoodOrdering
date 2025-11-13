@@ -23,7 +23,7 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
         });
     };
 
-    // --- SỬA ĐỔI: LOGIC NÚT BẤM CỦA BẾP ---
+    // --- (Hàm renderActionButtons, handleCancelClick, handleAddNoteClick giữ nguyên) ---
     const renderActionButtons = () => {
         switch (order.status) {
             case 'RECEIVED': // Admin vừa đẩy xuống
@@ -31,7 +31,6 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
             case 'PREPARING': // Bếp đang làm
                 return ( <button className="btn ready" onClick={() => onUpdateStatus(order.id, 'READY', 'Hoàn thành đơn này (sẵn sàng giao)?')}>Hoàn thành (Sẵn sàng)</button> );
             case 'READY': // Bếp đã làm xong, chờ Admin/Shipper
-                // Bếp không còn quyền chuyển sang COMPLETED
                 return <p className="status-ready">ĐÃ SẴN SÀNG (Chờ giao)</p>;
             case 'CANCELLED':
                 return <p className="status-cancelled">ĐÃ HỦY</p>;
@@ -39,7 +38,6 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                 return null;
         }
     };
-    // --- KẾT THÚC SỬA ĐỔI ---
 
     const handleCancelClick = () => {
         const reason = prompt("Bạn có chắc chắn muốn HỦY đơn hàng này không?\nNhập lý do hủy (sẽ hiển thị cho khách hàng):");
@@ -79,6 +77,7 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                     </li>
                 )}
 
+                {/* --- BẮT ĐẦU SỬA ĐỔI (Hiển thị Options) --- */}
                 {order.items && order.items.map((item, index) => {
                     const isTicked = tickedItems.has(index);
                     const itemStyle = {
@@ -96,15 +95,26 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                             style={itemStyle}
                             onClick={() => (order.status === 'PREPARING' ? handleToggleTick(index) : null)}
                         >
-                            {item.quantity} x {getItemName(item.menuItemId)}
+                            {/* Tên món ăn */}
+                            <strong>{item.quantity} x {getItemName(item.menuItemId)}</strong>
+
+                            {/* Tùy chọn (Options) - Rất quan trọng cho bếp */}
+                            {item.selectedOptionsText && (
+                                <div style={{ fontSize: '0.9em', color: '#c0392b', fontWeight: 'bold', paddingLeft: '10px' }}>
+                                    ↳ {item.selectedOptionsText}
+                                </div>
+                            )}
+
+                            {/* Ghi chú của khách cho món ăn */}
                             {item.note && (
-                                <div style={{ fontSize: '0.9em', color: 'gray', fontStyle: 'italic' }}>
+                                <div style={{ fontSize: '0.9em', color: 'gray', fontStyle: 'italic', paddingLeft: '10px' }}>
                                     ↳ Ghi chú KH: {item.note}
                                 </div>
                             )}
                         </li>
                     );
                 })}
+                {/* --- KẾT THÚC SỬA ĐỔI --- */}
             </ul>
 
             {renderActionButtons()}

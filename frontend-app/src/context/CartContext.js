@@ -108,7 +108,7 @@ export const CartProvider = ({ children }) => {
         addToCart, // (Giờ đây nhận 1 item đã xử lý)
         removeFromCart, // (Giờ đây nhận cartItemId)
         clearCart,
-        updateItemNote: updateCartItemNote, // Sửa: Trỏ updateItemNote vào hàm mới
+        updateCartItemNote: updateCartItemNote, // Sửa: Trỏ updateItemNote vào hàm mới
         loadCartFromReorder,
 
         voucher,

@@ -21,6 +21,9 @@ const styles = {
     th: { background: '#f4f4f4', padding: '8px', border: '1px solid #ddd', textAlign: 'left' },
     td: { padding: '8px', border: '1px solid #ddd', verticalAlign: 'top' },
     note: { fontSize: '0.9em', fontStyle: 'italic', color: 'gray', margin: '2px 0 0 10px', whiteSpace: 'pre-wrap' },
+    // --- THÊM STYLE MỚI CHO TÙY CHỌN ---
+    options: { fontSize: '0.9em', fontStyle: 'italic', color: '#c0392b', margin: '2px 0 0 10px', fontWeight: 'bold' },
+    // --- KẾT THÚC THÊM ---
     internalNote: { fontSize: '0.9em', fontStyle: 'italic', color: 'blue', margin: '2px 0 0 10px', fontWeight: 'bold', whiteSpace: 'pre-wrap' },
     actionButton: { padding: '5px 10px', fontSize: '0.9em', cursor: 'pointer', border: 'none', color: 'white', borderRadius: '4px', marginRight: '5px', marginBottom: '5px' },
     btnConfirm: { backgroundColor: '#27ae60' },
@@ -212,9 +215,7 @@ export const AdminOrderPage = () => {
                     <th style={styles.th}>Chi tiết Món ăn</th>
                     <th style={styles.th}>Giao hàng / Ghi chú</th>
                     <th style={styles.th}>Tổng tiền</th>
-                    {/* --- SỬA LỖI STYLE (DẤU NGOẶC NHỌN) --- */}
                     <th style={styles.th}>Trạng thái</th>
-                    {/* --- KẾT THÚC SỬA LỖI --- */}
                     <th style={styles.th}>Hành động</th>
                 </tr>
                 </thead>
@@ -230,12 +231,20 @@ export const AdminOrderPage = () => {
                             </div>
                         </td>
                         <td style={styles.td}>
+                            {/* --- BẮT ĐẦU SỬA ĐỔI --- */}
                             {order.items.map((item, index) => (
                                 <div key={index}>
                                     <strong>{item.quantity} x {item.name}</strong>
+                                    {/* Hiển thị tùy chọn (nếu có) */}
+                                    {item.selectedOptionsText && (
+                                        <div style={styles.options}>
+                                            ↳ {item.selectedOptionsText}
+                                        </div>
+                                    )}
                                     {item.note && <div style={styles.note}>↳ Ghi chú KH: {item.note}</div>}
                                 </div>
                             ))}
+                            {/* --- KẾT THÚC SỬA ĐỔI --- */}
                         </td>
                         <td style={styles.td}>
                             <div>{order.deliveryAddress}</div>
