@@ -3,13 +3,13 @@ package com.GourmetGo.foodorderingapp.controller;
 import com.GourmetGo.foodorderingapp.dto.UpdateStatusRequest;
 import com.GourmetGo.foodorderingapp.dto.CancelRequest;
 import com.GourmetGo.foodorderingapp.dto.NoteRequest;
-import com.GourmetGo.foodorderingapp.model.Employee; // <-- THÊM IMPORT
+import com.GourmetGo.foodorderingapp.model.Employee; // <-- Thêm import
 import com.GourmetGo.foodorderingapp.service.KitchenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.security.access.AccessDeniedException; // <-- THÊM IMPORT
-import org.springframework.security.core.annotation.AuthenticationPrincipal; // <-- THÊM IMPORT
+import org.springframework.security.access.AccessDeniedException; // <-- Thêm import
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // <-- Thêm import
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -31,7 +31,6 @@ public class KitchenController {
     @MessageMapping("/kitchen/update-status")
     public void handleStatusUpdate(@Payload UpdateStatusRequest request, @AuthenticationPrincipal Employee employee) {
         String role = "ROLE_" + employee.getRole().name();
-        // (Đã thêm logic kiểm tra quyền trong KitchenService)
         kitchenService.updateOrderStatus(request, role);
     }
 
@@ -41,24 +40,21 @@ public class KitchenController {
         return kitchenService.getActiveOrders();
     }
 
-    // --- SỬA ĐỔI HÀM NÀY ---
     @PostMapping("/api/kitchen/cancel-order")
     @ResponseBody
     public ResponseEntity<String> cancelOrder(
             @RequestBody CancelRequest request,
             @AuthenticationPrincipal Employee employee) { // <-- Lấy Employee
         try {
-            // Lấy vai trò từ principal
             String role = "ROLE_" + employee.getRole().name();
             kitchenService.cancelOrder(request, role); // <-- Truyền vai trò
             return ResponseEntity.ok("Đơn hàng đã được hủy.");
-        } catch (IllegalStateException | AccessDeniedException e) { // <-- Bắt lỗi nghiệp vụ/quyền
+        } catch (IllegalStateException | AccessDeniedException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Lỗi khi hủy đơn hàng.");
         }
     }
-    // --- KẾT THÚC SỬA ĐỔI ---
 
     @PostMapping("/api/kitchen/order/{id}/kitchen-note")
     @ResponseBody

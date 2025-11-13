@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 
+// (Các import khác giữ nguyên)
 import { Menu } from './components/Menu';
 import { Cart } from './components/Cart';
 import { Checkout } from './components/Checkout';
@@ -19,12 +20,14 @@ import { ChangePasswordPage } from './components/ChangePasswordPage';
 import { AdminMenuPage } from './components/AdminMenuPage';
 import { MenuItemForm } from './components/MenuItemForm';
 import { AdminOrderPage } from './components/AdminOrderPage';
-
-// --- 1. THÊM IMPORT MỚI CHO TRANG SỬA ĐƠN HÀNG ---
 import { OrderEditPage } from './components/OrderEditPage';
+import { AdminRevenuePage } from './components/AdminRevenuePage';
+import { AdminVoucherPage } from './components/AdminVoucherPage';
+import { VoucherForm } from './components/VoucherForm';
+import { OrderReviewPage } from './components/OrderReviewPage';
+import { AdminReviewPage } from './components/AdminReviewPage';
 
-
-// (Các Layout và DinerPage giữ nguyên)
+// (CustomerLayout, KitchenLayout, DinerPage giữ nguyên)
 const CustomerLayout = () => (
     <div>
         <CustomerHeader />
@@ -59,6 +62,7 @@ function App() {
         <Routes>
             {/* Bố cục Khách hàng (Giao diện A) */}
             <Route path="/*" element={<CustomerLayout />}>
+                {/* ... (Các route khách hàng giữ nguyên) ... */}
                 <Route index element={<DinerPage />} />
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
@@ -78,19 +82,23 @@ function App() {
                     path="change-password"
                     element={<DinerRoute><ChangePasswordPage /></DinerRoute>}
                 />
+                <Route
+                    path="review/:orderId"
+                    element={<DinerRoute><OrderReviewPage /></DinerRoute>}
+                />
             </Route>
 
-            {/* Bố cục Bếp (Giao diện B) */}
-            <Route path="/kitchen/*" element={<KitchenLayout />}>
+            {/* --- SỬA ĐỔI: Bố cục Bếp (Giao diện B) --- */}
+            {/* Đổi: path="/kitchen/*" -> path="/restaurant/*" */}
+            <Route path="/restaurant/*" element={<KitchenLayout />}>
                 <Route path="login" element={<KitchenLoginPage />} />
 
-                {/* Trang KDS (KITCHEN, ADMIN) */}
                 <Route
                     path=""
                     element={<KitchenRoute><KitchenDisplay /></KitchenRoute>}
                 />
 
-                {/* Routes Quản lý Menu (ADMIN only) */}
+                {/* (Các route con giữ nguyên cấu trúc tương đối) */}
                 <Route
                     path="admin/menu"
                     element={<AdminRoute><AdminMenuPage /></AdminRoute>}
@@ -104,16 +112,35 @@ function App() {
                     element={<AdminRoute><MenuItemForm /></AdminRoute>}
                 />
 
-                {/* Routes Quản lý Đơn hàng (ADMIN, EMPLOYEE) */}
                 <Route
                     path="admin/orders"
                     element={<AdminRoute><AdminOrderPage /></AdminRoute>}
                 />
-
-                {/* --- 2. THÊM ROUTE SỬA ĐƠN HÀNG --- */}
                 <Route
                     path="admin/order/edit/:id"
                     element={<AdminRoute><OrderEditPage /></AdminRoute>}
+                />
+
+                <Route
+                    path="admin/revenue"
+                    element={<AdminRoute><AdminRevenuePage /></AdminRoute>}
+                />
+
+                <Route
+                    path="admin/vouchers"
+                    element={<AdminRoute><AdminVoucherPage /></AdminRoute>}
+                />
+                <Route
+                    path="admin/voucher/new"
+                    element={<AdminRoute><VoucherForm /></AdminRoute>}
+                />
+                <Route
+                    path="admin/voucher/edit/:id"
+                    element={<AdminRoute><VoucherForm /></AdminRoute>}
+                />
+                <Route
+                    path="admin/reviews"
+                    element={<AdminRoute><AdminReviewPage /></AdminRoute>}
                 />
             </Route>
         </Routes>

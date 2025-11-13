@@ -38,6 +38,7 @@ public class OrderBatchProcessor {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private MenuItemRepository menuItemRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate;
+    @Autowired private VoucherService voucherService; // <-- THÊM MỚI
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -46,14 +47,12 @@ public class OrderBatchProcessor {
         objectMapper.registerModule(new JavaTimeModule());
     }
 
-    // (Hàm processOrderQueue và transformRequestToOrder giữ nguyên)
     @Scheduled(fixedRate = 1000)
     @Transactional
     public void processOrderQueue() {
         log.info("Đang kiểm tra hàng đợi đơn hàng...");
         List<String> orderJsonList = redisTemplate.opsForList().range(ORDER_QUEUE_KEY, 0, -1);
         if (orderJsonList == null || orderJsonList.isEmpty()) { log.info("Hàng đợi trống, không có gì để xử lý."); return; }
-        log.info("Tìm thấy {} đơn hàng...", orderJsonList.size());
 
         List<Order> ordersToSave = new ArrayList<>();
         long processedCount = 0;
@@ -76,8 +75,19 @@ public class OrderBatchProcessor {
             for (Order savedOrder : savedOrders) {
                 Map<String, Object> orderDto = convertOrderToDto(savedOrder);
 
+                // Gửi cho Admin/Employee
                 log.info("Đang gửi đơn hàng DTO tới /topic/admin/order-updates: {}", orderDto);
                 messagingTemplate.convertAndSend("/topic/admin/order-updates", orderDto);
+
+                // Tăng lượt sử dụng voucher (nếu có)
+                if (savedOrder.getVoucherCode() != null && !savedOrder.getVoucherCode().isBlank()) {
+                    try {
+                        voucherService.incrementVoucherUsage(savedOrder.getVoucherCode());
+                        log.info("Đã tăng lượt sử dụng cho voucher: {}", savedOrder.getVoucherCode());
+                    } catch (Exception e) {
+                        log.error("Lỗi khi tăng lượt sử dụng voucher {}: {}", savedOrder.getVoucherCode(), e.getMessage());
+                    }
+                }
             }
         }
 
@@ -93,15 +103,29 @@ public class OrderBatchProcessor {
 
         Order order = new Order();
         order.setCustomer(customer);
-        order.setStatus(OrderStatus.PENDING_CONFIRMATION);
+        order.setStatus(OrderStatus.PENDING_CONFIRMATION); // <-- Đổi
         order.setDeliveryAddress(request.getDeliveryAddress());
         order.setShipperNote(request.getShipperNote());
         order.setPaymentMethod(request.getPaymentMethod());
         order.setSubtotal(request.getSubtotal());
         order.setVatAmount(request.getVatAmount());
         order.setShippingFee(request.getShippingFee());
-        order.setGrandTotal(request.getGrandTotal());
         order.setPickupWindow(request.getPickupWindow());
+
+        // --- CẬP NHẬT: Ghi lại Voucher và GrandTotal ---
+        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
+        BigDecimal grandTotal = request.getSubtotal()
+                .add(request.getVatAmount())
+                .add(request.getShippingFee())
+                .subtract(discountAmount);
+        if (grandTotal.compareTo(BigDecimal.ZERO) < 0) {
+            grandTotal = BigDecimal.ZERO;
+        }
+
+        order.setGrandTotal(grandTotal);
+        order.setVoucherCode(request.getVoucherCode());
+        order.setDiscountAmount(discountAmount);
+        // --- KẾT THÚC ---
 
         Set<OrderItem> orderItems = new HashSet<>();
         for (OrderItemRequest itemRequest : request.getItems()) {
@@ -126,19 +150,14 @@ public class OrderBatchProcessor {
         return order;
     }
 
-
     private Map<String, Object> convertOrderToDto(Order order) {
         Map<String, Object> orderDto = new HashMap<>();
         orderDto.put("id", order.getId());
         orderDto.put("status", order.getStatus().toString());
         orderDto.put("pickupWindow", order.getPickupWindow());
-
-        // --- THÊM THÔNG TIN KHÁCH HÀNG ---
         orderDto.put("userId", order.getCustomer().getId());
         orderDto.put("customerName", order.getCustomer().getName());
         orderDto.put("customerPhone", order.getCustomer().getPhoneNumber());
-        // --- KẾT THÚC THÊM ---
-
         orderDto.put("orderTime", order.getOrderTime());
         orderDto.put("deliveryAddress", order.getDeliveryAddress());
         orderDto.put("shipperNote", order.getShipperNote());
@@ -154,6 +173,11 @@ public class OrderBatchProcessor {
         orderDto.put("kitchenNote", order.getKitchenNote());
         orderDto.put("deliveryNote", order.getDeliveryNote());
         orderDto.put("employeeNote", order.getEmployeeNote());
+
+        // --- THÊM MỚI (nếu thiếu) ---
+        orderDto.put("voucherCode", order.getVoucherCode());
+        orderDto.put("discountAmount", order.getDiscountAmount());
+        // --- KẾT THÚC ---
 
         List<Map<String, Object>> itemDtos = order.getItems().stream().map(item -> {
             Map<String, Object> itemMap = new HashMap<>();

@@ -17,7 +17,6 @@ import java.io.Serializable;
 @NoArgsConstructor
 public class MenuItem implements Serializable{
 
-    // (serialVersionUID, id, name, description, price, isVegetarian, isSpicy, isPopular giữ nguyên)
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,26 +31,18 @@ public class MenuItem implements Serializable{
     private boolean isSpicy;
     private boolean isPopular;
 
-    // --- BẮT ĐẦU THÊM TRƯỜNG MỚI ---
-
-    /** URL hình ảnh của món ăn */
     @Column(nullable = true, length = 1024)
     private String imageUrl;
 
-    /** Phân loại món ăn (món chính, tráng miệng, v.v.) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MenuItemCategory category;
 
-    /** Trạng thái (đang bán, hết hàng, ngừng bán) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MenuItemStatus status;
 
-    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
-
-
-    // (Các liên kết @OneToMany giữ nguyên)
+    // (Các liên kết @OneToMany cũ giữ nguyên)
     @OneToMany(mappedBy = "menuItem")
     @JsonManagedReference("menu-item-order-item")
     private Set<OrderItem> orderItems;
@@ -59,4 +50,14 @@ public class MenuItem implements Serializable{
     @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("menu-item-review")
     private Set<Review> reviews;
+
+    // --- BẮT ĐẦU THÊM MỚI ---
+    /**
+     * Danh sách các nhóm tùy chọn cho món ăn này
+     * (Ví dụ: Món "Trà sữa" có nhóm "Chọn Size", "Chọn Topping")
+     */
+    @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference("menu-item-option-group")
+    private Set<OptionGroup> optionGroups;
+    // --- KẾT THÚC THÊM MỚI ---
 }

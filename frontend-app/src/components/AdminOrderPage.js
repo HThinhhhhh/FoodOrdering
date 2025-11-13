@@ -39,7 +39,7 @@ export const AdminOrderPage = () => {
     const stompClientRef = useRef(null);
     const navigate = useNavigate();
 
-    // (Hàm fetchOrders, updateOrderInState, useEffect, handleFilterChange giữ nguyên)
+    // (Tất cả các hàm xử lý (handlers) và useEffect giữ nguyên)
     const fetchOrders = async (filter) => {
         setLoading(true);
         try {
@@ -56,7 +56,6 @@ export const AdminOrderPage = () => {
         setOrders(prevOrders => {
             const index = prevOrders.findIndex(o => o.id === updatedOrder.id);
             const matchesFilter = !statusFilter || statusFilter === 'ALL' || statusFilter === updatedOrder.status;
-
             if (index > -1) {
                 if (matchesFilter) {
                     const newOrders = [...prevOrders];
@@ -74,23 +73,15 @@ export const AdminOrderPage = () => {
 
     useEffect(() => {
         fetchOrders(statusFilter);
-
         const client = new Client();
         client.webSocketFactory = () => new SockJS(BACKEND_WS_URL);
         client.onConnect = () => {
-            console.log("Admin Đã kết nối WebSocket!");
-
             client.subscribe('/topic/admin/order-updates', (message) => {
-                const updatedOrder = JSON.parse(message.body);
-                console.log("Admin nhận CẬP NHẬT:", updatedOrder);
-                updateOrderInState(updatedOrder);
+                updateOrderInState(JSON.parse(message.body));
             });
         };
-
-        client.onStompError = (frame) => console.error("Lỗi STOMP (Admin):", frame);
         client.activate();
         stompClientRef.current = client;
-
         return () => {
             if (stompClientRef.current) stompClientRef.current.deactivate();
         };
@@ -100,46 +91,34 @@ export const AdminOrderPage = () => {
         setStatusFilter(e.target.value);
     };
 
-    // (Các hàm handleUpdateStatus, handleCancelOrder, handleAddDeliveryNote, handleAddEmployeeNote giữ nguyên)
     const handleUpdateStatus = async (orderId, newStatus) => {
-        if (!window.confirm(`Bạn có chắc muốn chuyển đơn hàng #${orderId} sang trạng thái [${newStatus}]?`)) {
-            return;
-        }
-
+        if (!window.confirm(`Bạn có chắc muốn chuyển đơn hàng #${orderId} sang trạng thái [${newStatus}]?`)) return;
         try {
-            await axios.put(`${API_URL}/api/admin/orders/${orderId}/status`, {
-                orderId: orderId,
-                newStatus: newStatus
-            });
+            await axios.put(`${API_URL}/api/admin/orders/${orderId}/status`, { orderId, newStatus });
         } catch (err) {
             alert("Lỗi khi cập nhật trạng thái.");
         }
     };
 
     const handleCancelOrder = async (orderId) => {
-        const reason = prompt("Bạn có chắc chắn muốn HỦY đơn hàng này không?\nNhập lý do hủy (sẽ hiển thị cho khách hàng):");
-        if (reason === null) { return; }
-        if (reason.trim() === "") { alert("Bạn phải nhập lý do hủy đơn hàng."); return; }
-
+        const reason = prompt("Nhập lý do hủy:");
+        if (!reason) return;
         if (window.confirm(`Bạn có chắc muốn HỦY đơn hàng #${orderId} với lý do: "${reason}"?`)) {
             try {
-                await axios.post(`${API_URL}/api/kitchen/cancel-order`, {
-                    orderId: orderId,
-                    reason: reason
-                });
+                await axios.post(`${API_URL}/api/kitchen/cancel-order`, { orderId, reason });
             } catch (error) {
-                alert("Đã xảy ra lỗi khi hủy đơn hàng: " + (error.response?.data || error.message));
+                alert(error.response?.data || "Lỗi khi hủy đơn hàng.");
             }
         }
     };
 
     const handleAddDeliveryNote = async (orderId, currentNote) => {
-        const note = prompt("Nhập thông tin giao hàng (Shipper, SĐT, v.v.) - KHÁCH SẼ THẤY:", currentNote || "");
+        const note = prompt("Nhập thông tin giao hàng (KHÁCH SẼ THẤY):", currentNote || "");
         if (note !== null) {
             try {
-                await axios.post(`${API_URL}/api/admin/orders/${orderId}/delivery-note`, { note: note });
+                await axios.post(`${API_URL}/api/admin/orders/${orderId}/delivery-note`, { note });
             } catch (err) {
-                alert("Lỗi khi thêm ghi chú giao hàng.");
+                alert(err.response?.data || "Lỗi khi thêm ghi chú giao hàng.");
             }
         }
     };
@@ -148,15 +127,16 @@ export const AdminOrderPage = () => {
         const note = prompt("Thêm ghi chú nội bộ (chỉ nhân viên/admin thấy):");
         if (note && note.trim() !== "") {
             try {
-                await axios.post(`${API_URL}/api/admin/orders/${orderId}/employee-note`, { note: note });
+                await axios.post(`${API_URL}/api/admin/orders/${orderId}/employee-note`, { note });
             } catch (err) {
                 alert("Lỗi khi thêm ghi chú nhân viên.");
             }
         }
     };
 
-    // (Hàm renderAdminActions giữ nguyên)
     const renderAdminActions = (order) => {
+        const isLocked = order.status === 'COMPLETED' || order.status === 'CANCELLED';
+        const isDelivering = order.status === 'DELIVERING';
         return (
             <div>
                 {order.status === 'PENDING_CONFIRMATION' && (
@@ -165,51 +145,43 @@ export const AdminOrderPage = () => {
                         ✅ Xác nhận (Gửi Bếp)
                     </button>
                 )}
-
                 {order.status === 'READY' && (
                     <button style={{...styles.actionButton, ...styles.btnDeliver}}
                             onClick={() => {
                                 const note = prompt("Nhập thông tin giao hàng (Shipper, SĐT, v.v.):", order.deliveryNote || "");
                                 if (note !== null && note.trim() !== "") {
                                     axios.post(`${API_URL}/api/admin/orders/${order.id}/delivery-note`, { note })
-                                        .then(() => {
-                                            handleUpdateStatus(order.id, 'DELIVERING');
-                                        })
-                                        .catch(err => alert("Lỗi lưu ghi chú. Chưa chuyển trạng thái."));
-                                } else if (note !== null) {
-                                    alert("Bạn phải nhập thông tin giao hàng.");
-                                }
+                                        .then(() => handleUpdateStatus(order.id, 'DELIVERING'))
+                                        .catch(err => alert(err.response?.data || "Lỗi lưu ghi chú."));
+                                } else if (note !== null) alert("Bạn phải nhập thông tin giao hàng.");
                             }}>
                         🚚 Giao hàng
                     </button>
                 )}
-
-                {order.status === 'DELIVERING' && (
+                {isDelivering && (
                     <button style={{...styles.actionButton, ...styles.btnComplete}}
                             onClick={() => handleUpdateStatus(order.id, 'COMPLETED')}>
                         🏁 Hoàn thành
                     </button>
                 )}
-
-                {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                {!isLocked && (
                     <button style={{...styles.actionButton, ...styles.btnCancel}}
                             onClick={() => handleCancelOrder(order.id)}>
                         Hủy
                     </button>
                 )}
-
                 {order.status === 'PENDING_CONFIRMATION' && (
                     <button style={{...styles.actionButton, ...styles.btnEdit}}
-                            onClick={() => navigate(`/kitchen/admin/order/edit/${order.id}`)}>
+                            onClick={() => navigate(`/restaurant/admin/order/edit/${order.id}`)}>
                         Sửa
                     </button>
                 )}
-
-                <button style={{...styles.actionButton, ...styles.btnDeliver, opacity: 0.8}}
-                        onClick={() => handleAddDeliveryNote(order.id, order.deliveryNote)}>
-                    Note Giao hàng (Khách)
-                </button>
-
+                {!isDelivering && !isLocked && (
+                    <button style={{...styles.actionButton, ...styles.btnDeliver, opacity: 0.8}}
+                            onClick={() => handleAddDeliveryNote(order.id, order.deliveryNote)}>
+                        Note Giao hàng (Khách)
+                    </button>
+                )}
                 <button style={{...styles.actionButton, ...styles.btnNote}}
                         onClick={() => handleAddEmployeeNote(order.id)}>
                     Note Nội bộ (NV)
@@ -217,7 +189,6 @@ export const AdminOrderPage = () => {
             </div>
         );
     };
-
 
     return (
         <div style={styles.container}>
@@ -241,7 +212,9 @@ export const AdminOrderPage = () => {
                     <th style={styles.th}>Chi tiết Món ăn</th>
                     <th style={styles.th}>Giao hàng / Ghi chú</th>
                     <th style={styles.th}>Tổng tiền</th>
+                    {/* --- SỬA LỖI STYLE (DẤU NGOẶC NHỌN) --- */}
                     <th style={styles.th}>Trạng thái</th>
+                    {/* --- KẾT THÚC SỬA LỖI --- */}
                     <th style={styles.th}>Hành động</th>
                 </tr>
                 </thead>
@@ -251,17 +224,14 @@ export const AdminOrderPage = () => {
                         <td style={styles.td}>
                             <strong>#{order.id}</strong>
                             <div style={{fontSize: '0.9em'}}>{new Date(order.orderTime).toLocaleString()}</div>
-
-                            {/* --- THÊM THÔNG TIN KHÁCH HÀNG --- */}
                             <div style={{marginTop: '10px', borderTop: '1px dashed #ccc', paddingTop: '5px'}}>
                                 <div><strong>{order.customerName}</strong></div>
                                 <div>{order.customerPhone}</div>
                             </div>
-                            {/* --- KẾT THÚC THÊM --- */}
                         </td>
                         <td style={styles.td}>
-                            {order.items.map(item => (
-                                <div key={item.menuItemId}>
+                            {order.items.map((item, index) => (
+                                <div key={index}>
                                     <strong>{item.quantity} x {item.name}</strong>
                                     {item.note && <div style={styles.note}>↳ Ghi chú KH: {item.note}</div>}
                                 </div>

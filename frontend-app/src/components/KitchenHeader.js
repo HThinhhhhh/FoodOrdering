@@ -33,41 +33,51 @@ export const KitchenHeader = () => {
 
     const handleLogout = async () => {
         await logout();
-        navigate('/kitchen/login');
+        navigate('/restaurant/login'); // SỬA: kitchen -> restaurant
     };
 
     const renderLinks = () => {
         if (!currentUser) {
-            return <Link to="/kitchen/login" style={linkStyle}>Đăng nhập Bếp/Admin/NV</Link>;
+            return <Link to="/restaurant/login" style={linkStyle}>Đăng nhập Bếp/Admin/NV</Link>; // SỬA
         }
 
-        // Tất cả nhân viên đã đăng nhập
         if (currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN' || currentUser.role === 'EMPLOYEE') {
             return (
                 <>
                     {/* Link cho Bếp (KITCHEN, ADMIN) */}
                     {(currentUser.role === 'KITCHEN' || currentUser.role === 'ADMIN') && (
-                        <Link to="/kitchen" style={linkStyle}>Màn hình Bếp</Link>
+                        <Link to="/restaurant" style={linkStyle}>Màn hình Bếp</Link> // SỬA
                     )}
 
                     {/* Link cho Quản lý Đơn hàng (EMPLOYEE, ADMIN) */}
                     {(currentUser.role === 'EMPLOYEE' || currentUser.role === 'ADMIN') && (
-                        <Link to="/kitchen/admin/orders" style={{...linkStyle, color: 'red'}}>
+                        <Link to="/restaurant/admin/orders" style={{...linkStyle, color: 'red'}}>
                             Quản lý Đơn hàng
-                        </Link>
+                        </Link> // SỬA
                     )}
 
-                    {/* Link cho Quản lý Menu (ADMIN only) */}
+                    {/* Link cho Quản lý (ADMIN only) */}
                     {currentUser.role === 'ADMIN' && (
-                        <Link to="/kitchen/admin/menu" style={{...linkStyle, color: 'red'}}>
-                            Quản lý Menu
-                        </Link>
+                        <>
+                            <Link to="/restaurant/admin/menu" style={{...linkStyle, color: 'red'}}>
+                                Quản lý Menu
+                            </Link>
+                            <Link to="/restaurant/admin/revenue" style={{...linkStyle, color: 'blue'}}>
+                                Báo cáo Doanh thu
+                            </Link>
+                            <Link to="/restaurant/admin/vouchers" style={{...linkStyle, color: 'purple'}}>
+                                Quản lý Voucher
+                            </Link>
+                            {/* --- THÊM LINK REVIEW --- */}
+                            <Link to="/restaurant/admin/reviews" style={{...linkStyle, color: 'orange'}}>
+                                Quản lý Đánh giá
+                            </Link>
+                        </>
                     )}
                 </>
             );
         }
 
-        // (Nếu là DINER, AuthContext sẽ tự động điều hướng, nhưng để dự phòng)
         return null;
     };
 

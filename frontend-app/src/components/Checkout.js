@@ -8,8 +8,8 @@ import { useMenu } from '../context/MenuContext';
 import { formatCurrency } from '../utils/formatCurrency';
 
 const API_URL = process.env.REACT_APP_API_URL;
-const SHIPPING_FEE = 30000; // Phí vận chuyển (Goal 11)
-const VAT_RATE = 0.15; // 15% (Goal 10)
+const SHIPPING_FEE = 30000;
+const VAT_RATE = 0.15;
 
 // CSS cho trang thanh toán (Bạn nên tách ra file .css)
 const styles = {
@@ -62,7 +62,18 @@ const isValidExpiry = (expiry) => {
 // --- KẾT THÚC HÀM VALIDATION ---
 
 export const Checkout = () => {
-    const { cartItems, clearCart, updateItemNote } = useCart();
+    // --- SỬA ĐỔI: LẤY STATE VOUCHER TỪ CONTEXT ---
+    const {
+        cartItems,
+        clearCart,
+        updateItemNote,
+        subtotal, // Lấy subtotal
+        voucher,  // Lấy voucher đã áp dụng
+        voucherError,
+        applyVoucher,
+        removeVoucher
+    } = useCart();
+    // --- KẾT THÚC SỬA ĐỔI ---
     const { getItemName } = useMenu();
     const navigate = useNavigate();
     const { currentUser, updateUser } = useAuth();
@@ -90,6 +101,9 @@ export const Checkout = () => {
     // (State cho lỗi validation)
     const [validationErrors, setValidationErrors] = useState({});
 
+    // --- STATE MỚI: Cho ô nhập liệu voucher ---
+    const [voucherCodeInput, setVoucherCodeInput] = useState('');
+
     // Tải thông tin người dùng
     useEffect(() => {
         if (!currentUser) return;
@@ -115,11 +129,12 @@ export const Checkout = () => {
         setFullAddress(parts.filter(Boolean).join(', '));
     }, [apartmentNumber, streetAddress, ward, city]);
 
-    // Tính toán Tiền (Goal 10, 11, 12)
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    // --- SỬA ĐỔI: TÍNH TOÁN TIỀN (Thêm Giảm giá) ---
+    const discountAmount = voucher ? voucher.discountAmount : 0;
     const vatAmount = subtotal * VAT_RATE;
     const shippingFee = SHIPPING_FEE;
-    const grandTotal = subtotal + vatAmount + shippingFee;
+    const grandTotal = subtotal + vatAmount + shippingFee - discountAmount;
+    // --- KẾT THÚC SỬA ĐỔI ---
 
     // --- HÀM MỚI: XỬ LÝ NHẬP LIỆU THẺ (Goal 1, 2, 3, 4) ---
     const handleCardChange = (e) => {
@@ -151,6 +166,11 @@ export const Checkout = () => {
         }
     };
     // --- KẾT THÚC HÀM MỚI ---
+
+    // --- HÀM MỚI: Xử lý nút Áp dụng ---
+    const handleApplyVoucher = () => {
+        applyVoucher(voucherCodeInput);
+    };
 
     const handleCheckout = async () => {
         if (!name || !phone || !streetAddress || !ward || !city) {
@@ -219,7 +239,13 @@ export const Checkout = () => {
                     subtotal: subtotal,
                     vatAmount: vatAmount,
                     shippingFee: shippingFee,
-                    grandTotal: grandTotal,
+
+                    // --- THÊM DỮ LIỆU VOUCHER ---
+                    discountAmount: discountAmount,
+                    voucherCode: voucher ? voucher.code : null,
+                    grandTotal: grandTotal, // Gửi tổng tiền cuối cùng
+                    // --- KẾT THÚC ---
+
                     pickupWindow: new Date(Date.now() + 30 * 60000).toISOString() // Giả định 30p
                 };
 
@@ -399,7 +425,34 @@ export const Checkout = () => {
                 </div>
             </section>
 
-            {/* (Phần 3: Thông tin đơn hàng giữ nguyên) */}
+            {/* --- PHẦN 3: VOUCHER (MỚI) --- */}
+            <section style={styles.section}>
+                <h3 style={styles.h3}>Mã Giảm Giá</h3>
+                <div style={{display: 'flex', gap: '10px'}}>
+                    <input
+                        type="text"
+                        placeholder="Nhập mã voucher"
+                        value={voucherCodeInput}
+                        onChange={(e) => setVoucherCodeInput(e.target.value.toUpperCase())}
+                        style={{...styles.input, flex: 1}}
+                        disabled={!!voucher} // Vô hiệu hóa nếu đã áp dụng
+                    />
+                    {voucher ? (
+                        <button onClick={removeVoucher} style={{...styles.checkoutButton, width: 'auto', background: 'gray'}}>Hủy</button>
+                    ) : (
+                        <button onClick={handleApplyVoucher} style={{...styles.checkoutButton, width: 'auto'}}>Áp dụng</button>
+                    )}
+                </div>
+                {voucherError && <p style={{color: 'red'}}>{voucherError}</p>}
+                {voucher && (
+                    <p style={{color: 'green', fontWeight: 'bold'}}>
+                        Áp dụng thành công [{voucher.code}]: {voucher.description}
+                    </p>
+                )}
+            </section>
+            {/* --- KẾT THÚC PHẦN 3 --- */}
+
+            {/* (Phần 4: Thông tin đơn hàng - SỬA ĐỔI) */}
             <section style={styles.section}>
                 <h3 style={styles.h3}>Thông tin đơn hàng</h3>
                 {cartItems.map(item => (
@@ -430,6 +483,16 @@ export const Checkout = () => {
                     <span>Phí vận chuyển:</span>
                     <span>{formatCurrency(shippingFee)}</span>
                 </div>
+
+                {/* --- THÊM DÒNG GIẢM GIÁ --- */}
+                {discountAmount > 0 && (
+                    <div style={{...styles.totalRow, color: 'green', fontWeight: 'bold'}}>
+                        <span>Giảm giá ({voucher.code}):</span>
+                        <span>-{formatCurrency(discountAmount)}</span>
+                    </div>
+                )}
+                {/* --- KẾT THÚC --- */}
+
                 <hr />
                 <div style={{...styles.totalRow, ...styles.grandTotal}}>
                     <span>Tổng thanh toán:</span>
@@ -437,7 +500,7 @@ export const Checkout = () => {
                 </div>
             </section>
 
-            {/* (Phần 4: Nút Thanh toán giữ nguyên) */}
+            {/* (Phần 5: Nút Thanh toán giữ nguyên) */}
             <button onClick={handleCheckout} disabled={isLoading} style={styles.checkoutButton}>
                 {isLoading ? "Đang xử lý..." : `Thanh toán (${formatCurrency(grandTotal)})`}
             </button>

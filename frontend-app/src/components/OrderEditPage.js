@@ -64,7 +64,7 @@ export const OrderEditPage = () => {
             await axios.put(`${API_URL}/api/admin/orders/${id}/details`, payload);
 
             alert('Cập nhật chi tiết đơn hàng thành công!');
-            navigate('/kitchen/admin/orders'); // Quay lại trang danh sách
+            navigate('/restaurant/admin/orders'); // Quay lại trang danh sách
 
         } catch (err) {
             setError(err.response?.data || 'Lỗi khi cập nhật.');

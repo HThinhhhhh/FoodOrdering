@@ -19,6 +19,7 @@ import java.util.Set;
 @NoArgsConstructor
 public class Order {
 
+    // ... (Các trường từ id đến employeeNote giữ nguyên)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -38,13 +39,11 @@ public class Order {
 
     @CreationTimestamp
     private LocalDateTime orderTime;
-
     private LocalDateTime pickupWindow;
-
     @Column(nullable = true)
     private String deliveryAddress;
     @Column(nullable = true)
-    private String shipperNote; // Ghi chú của Khách hàng cho Shipper
+    private String shipperNote;
     @Column(nullable = false)
     private String paymentMethod;
     @Column(nullable = false)
@@ -63,18 +62,20 @@ public class Order {
     private String deliveryComment;
     @Column(nullable = true, length = 500)
     private String cancellationReason;
-
-    /** Ghi chú nội bộ của Bếp (khách hàng không thấy) */
     @Column(nullable = true, length = 500)
     private String kitchenNote;
-
-    /** Ghi chú giao hàng (vd: Tên Shipper, SĐT) - (Khách hàng CÓ THỂ thấy) */
     @Column(nullable = true, length = 500)
     private String deliveryNote;
-
-    // --- THÊM TRƯỜNG MỚI ---
-    /** Ghi chú của Nhân viên/Admin (khách hàng không thấy) */
     @Column(nullable = true, length = 500)
     private String employeeNote;
-    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
+
+    // --- THÊM 2 TRƯỜNG VOUCHER ---
+    /** Mã voucher đã áp dụng (ví dụ: "WELCOME50") */
+    @Column(nullable = true)
+    private String voucherCode;
+
+    /** Số tiền đã được giảm (đã tính toán) */
+    @Column(nullable = true)
+    private BigDecimal discountAmount;
+    // --- KẾT THÚC THÊM MỚI ---
 }

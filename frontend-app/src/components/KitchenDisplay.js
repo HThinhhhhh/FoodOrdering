@@ -31,6 +31,7 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
             case 'PREPARING': // Bếp đang làm
                 return ( <button className="btn ready" onClick={() => onUpdateStatus(order.id, 'READY', 'Hoàn thành đơn này (sẵn sàng giao)?')}>Hoàn thành (Sẵn sàng)</button> );
             case 'READY': // Bếp đã làm xong, chờ Admin/Shipper
+                // Bếp không còn quyền chuyển sang COMPLETED
                 return <p className="status-ready">ĐÃ SẴN SÀNG (Chờ giao)</p>;
             case 'CANCELLED':
                 return <p className="status-cancelled">ĐÃ HỦY</p>;
@@ -45,14 +46,13 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
         if (reason === null) { return; }
         if (reason.trim() === "") { alert("Bạn phải nhập lý do hủy đơn hàng."); return; }
 
-        // --- THÊM XÁC NHẬN ---
         if (window.confirm(`Bạn có chắc muốn HỦY đơn hàng #${order.id} với lý do: "${reason}"?`)) {
             onCancelOrder(order.id, reason);
         }
     };
 
     const handleAddNoteClick = () => {
-        const currentNote = order.kitchenNote || ""; // Sửa: internalNote -> kitchenNote
+        const currentNote = order.kitchenNote || "";
         const note = prompt("Thêm hoặc sửa ghi chú bếp (Admin sẽ thấy):", currentNote);
         if (note !== null) {
             onAddNote(order.id, note);
@@ -73,7 +73,6 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
                     )}
                 </li>
 
-                {/* Sửa: internalNote -> kitchenNote */}
                 {order.kitchenNote && (
                     <li style={{ background: '#e0f7fa', padding: '5px', borderRadius: '4px', marginBottom: '10px', fontStyle: 'italic', color: '#006064' }}>
                         Ghi chú Bếp: {order.kitchenNote}
@@ -110,7 +109,6 @@ const OrderCard = ({ order, onUpdateStatus, onCancelOrder, onAddNote, getItemNam
 
             {renderActionButtons()}
 
-            {/* Chỉ cho phép thêm Ghi chú và Hủy khi đơn hàng chưa sẵn sàng */}
             {order.status === 'RECEIVED' || order.status === 'PREPARING' ? (
                 <>
                     <button
@@ -148,8 +146,6 @@ export const KitchenDisplay = () => {
 
         const fetchActiveOrders = async () => {
             try {
-                // API này đã được sửa ở backend (KitchenService)
-                // để chỉ lấy RECEIVED, PREPARING, READY
                 const response = await axios.get(`${KITCHEN_API_URL}/api/kitchen/active-orders`);
                 setOrders(response.data);
                 console.log("KDS Đã tải " + response.data.length + " đơn hàng Bếp cần làm.");
@@ -162,7 +158,6 @@ export const KitchenDisplay = () => {
             console.log("KDS Đã kết nối WebSocket!");
             fetchActiveOrders();
 
-            // Lắng nghe đơn hàng MỚI (từ Admin)
             client.subscribe(SUB_TOPIC, (message) => {
                 try {
                     const newOrder = JSON.parse(message.body);
@@ -173,11 +168,9 @@ export const KitchenDisplay = () => {
                 }
             });
 
-            // Lắng nghe cập nhật (vd: Admin hủy đơn)
             client.subscribe('/topic/admin/order-updates', (message) => {
                 const updatedOrder = JSON.parse(message.body);
                 console.log("KDS nhận CẬP NHẬT từ Admin:", updatedOrder);
-                // Cập nhật hoặc xóa khỏi danh sách
                 setOrders(prevOrders => {
                     // Nếu đơn bị Hủy hoặc chuyển trạng thái Bếp không xem
                     if (updatedOrder.status === 'CANCELLED' || updatedOrder.status === 'DELIVERING' || updatedOrder.status === 'COMPLETED' || updatedOrder.status === 'PENDING_CONFIRMATION') {
@@ -201,12 +194,11 @@ export const KitchenDisplay = () => {
         };
     }, []);
 
-    // --- SỬA ĐỔI: Thêm `confirmText` ---
     const handleUpdateStatus = (orderId, newStatus, confirmText) => {
         if (!window.confirm(confirmText || `Bạn có chắc muốn chuyển trạng thái?`)) {
             return;
         }
-        // ... (logic gửi stomp giữ nguyên)
+
         const client = stompClientRef.current;
         if (client && client.connected) {
             const payload = { orderId: orderId, newStatus: newStatus };
@@ -215,7 +207,6 @@ export const KitchenDisplay = () => {
                 body: JSON.stringify(payload)
             });
 
-            // (Backend sẽ gửi WS lại, nhưng cập nhật UI ngay cho mượt)
             setOrders(prevOrders =>
                 prevOrders.map(order =>
                     order.id === orderId ? { ...order, status: newStatus } : order
@@ -227,21 +218,18 @@ export const KitchenDisplay = () => {
     };
 
     const handleCancelOrder = async (orderId, reason) => {
-        // (Xác nhận đã chuyển vào OrderCard)
         try {
             await axios.post(`${KITCHEN_API_URL}/api/kitchen/cancel-order`, {
                 orderId: orderId,
                 reason: reason
             });
-            // (Backend sẽ gửi WS, tự động xóa)
             setOrders(prevOrders => prevOrders.filter(o => o.id !== orderId));
         } catch (error) {
             console.error("Lỗi khi hủy đơn hàng:", error);
-            alert("Đã xảy ra lỗi khi hủy đơn hàng: " + (error.response?.data || error.message));
+            alert(error.response?.data || "Đã xảy ra lỗi khi hủy đơn hàng.");
         }
     };
 
-    // --- SỬA ĐỔI: Đổi tên API ---
     const handleAddNote = async (orderId, note) => {
         try {
             await axios.post(`${KITCHEN_API_URL}/api/kitchen/order/${orderId}/kitchen-note`, { note });
@@ -256,17 +244,13 @@ export const KitchenDisplay = () => {
         }
     };
 
-    // --- SỬA ĐỔI: Lọc trạng thái KDS ---
     const receivedOrders = orders.filter(o => o.status === 'RECEIVED');
     const preparingOrders = orders.filter(o => o.status === 'PREPARING');
     const readyOrders = orders.filter(o => o.status === 'READY');
-    // Bếp không cần xem đơn Hủy nữa
-    // const cancelledOrders = orders.filter(o => o.status === 'CANCELLED');
-    // --- KẾT THÚC SỬA ĐỔI ---
 
     return (
         <div className="kds-container">
-            {/* Cột 1: Đã nhận (1:2:1) */}
+            {/* Cột 1: Đã nhận */}
             <div className="kds-column" style={{ flex: 1 }}>
                 <h2 className="col-header received">
                     Đã nhận ({receivedOrders.length})
@@ -283,7 +267,7 @@ export const KitchenDisplay = () => {
                 ))}
             </div>
 
-            {/* Cột 2: Đang chuẩn bị (1:2:1) */}
+            {/* Cột 2: Đang chuẩn bị */}
             <div className="kds-column" style={{ flex: 2 }}>
                 <h2 className="col-header preparing">
                     Đang chuẩn bị ({preparingOrders.length})
@@ -300,7 +284,7 @@ export const KitchenDisplay = () => {
                 ))}
             </div>
 
-            {/* --- SỬA ĐỔI CỘT 3: Chỉ còn 'Sẵn sàng' --- */}
+            {/* Cột 3: Sẵn sàng */}
             <div className="kds-column" style={{ flex: 1 }}>
                 <h2 className="col-header ready">
                     Sẵn sàng ({readyOrders.length})
@@ -316,7 +300,6 @@ export const KitchenDisplay = () => {
                     />
                 ))}
             </div>
-            {/* --- KẾT THÚC SỬA ĐỔI --- */}
 
 
             {/* (CSS) */}

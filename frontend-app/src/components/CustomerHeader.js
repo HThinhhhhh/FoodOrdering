@@ -17,6 +17,14 @@ const linkStyle = {
     color: '#333',
     fontWeight: 'bold'
 };
+// --- THÊM STYLE MỚI ---
+const socialLinkStyle = {
+    ...linkStyle,
+    fontWeight: 'normal',
+    color: 'blue',
+    fontSize: '0.9em'
+};
+// --- KẾT THÚC THÊM ---
 const buttonStyle = {
     cursor: 'pointer',
     background: 'none',
@@ -28,16 +36,15 @@ const buttonStyle = {
 };
 
 export const CustomerHeader = () => {
-    const { currentUser, logout } = useAuth(); // Dùng hàm logout chung
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
-        navigate('/login'); // Đăng xuất khách về trang login của khách
+        navigate('/login');
     };
 
     const renderLinks = () => {
-        // Chỉ render link cho Khách hàng
         if (currentUser && currentUser.role === 'DINER') {
             return (
                 <>
@@ -46,23 +53,20 @@ export const CustomerHeader = () => {
                 </>
             );
         } else {
-            // Chưa đăng nhập Khách (Đã sửa ở bước trước, chỉ giữ lại Đăng ký)
             return (
                 <>
                     <Link to="/" style={linkStyle}>Thực đơn</Link>
                     <Link to="/login" style={linkStyle}>Đăng nhập</Link>
+                    <Link to="/register" style={linkStyle}>Đăng ký</Link>
                 </>
             );
         }
     };
 
-    const renderLogoutButton = () => {
-        // Chỉ hiện nút logout nếu là DINER
+    const renderUserActions = () => {
         if (currentUser && currentUser.role === 'DINER') {
             return (
-                // --- BẮT ĐẦU SỬA ĐỔI ---
                 <div>
-                    {/* Thêm Link "Đổi mật khẩu" */}
                     <Link
                         to="/change-password"
                         style={{...linkStyle, fontSize: '0.9em', color: 'blue', textDecoration: 'underline'}}
@@ -74,7 +78,6 @@ export const CustomerHeader = () => {
                         Đăng xuất ({currentUser.username})
                     </button>
                 </div>
-                // --- KẾT THÚC SỬA ĐỔI ---
             );
         }
         return null;
@@ -82,8 +85,22 @@ export const CustomerHeader = () => {
 
     return (
         <nav style={navStyle}>
-            <div>{renderLinks()}</div>
-            <div>{renderLogoutButton()}</div>
+            <div>
+                {renderLinks()}
+            </div>
+
+            {/* --- THÊM PHÍM TẮT ZALO/FB (FR7.3) --- */}
+            <div>
+                <a href="https://zalo.me/your-zalo-id" target="_blank" rel="noopener noreferrer" style={socialLinkStyle}>
+                    Hỗ trợ Zalo
+                </a>
+                <a href="https://facebook.com/your-page" target="_blank" rel="noopener noreferrer" style={socialLinkStyle}>
+                    Facebook
+                </a>
+            </div>
+            {/* --- KẾT THÚC THÊM --- */}
+
+            <div>{renderUserActions()}</div>
         </nav>
     );
 };

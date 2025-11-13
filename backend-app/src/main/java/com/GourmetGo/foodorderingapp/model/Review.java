@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp; // <-- THÊM IMPORT
+import java.time.LocalDateTime; // <-- THÊM IMPORT
 
 @Entity
 @Table(name = "reviews")
@@ -17,17 +19,15 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // Thêm FetchType LAZY
     @JoinColumn(name = "menu_item_id", nullable = false)
     @JsonBackReference("item-review")
     private MenuItem menuItem;
 
-    // --- THAY ĐỔI LIÊN KẾT ---
-    @ManyToOne
-    @JoinColumn(name = "customer_id", nullable = false) // Đổi từ user_id
-    @JsonBackReference("customer-review") // Đổi từ user-review
-    private Customer customer; // Đổi từ User
-    // --- KẾT THÚC THAY ĐỔI ---
+    @ManyToOne(fetch = FetchType.LAZY) // Thêm FetchType LAZY
+    @JoinColumn(name = "customer_id", nullable = false)
+    @JsonBackReference("customer-review")
+    private Customer customer;
 
     @Column(nullable = false)
     private int rating;
@@ -35,8 +35,13 @@ public class Review {
     @Column(nullable = true, length = 500)
     private String comment;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // Thêm FetchType LAZY
     @JoinColumn(name = "order_id", nullable = false)
     @JsonBackReference("order-review")
     private Order order;
+
+    // --- THÊM TRƯỜNG MỚI ---
+    @CreationTimestamp
+    private LocalDateTime reviewTime;
+    // --- KẾT THÚC THÊM MỚI ---
 }

@@ -44,7 +44,6 @@ public class SecurityConfig {
             HttpSecurity http,
             @Qualifier("customerUserDetailsService") UserDetailsService customerUserDetailsService
     ) throws Exception {
-
         http
                 .securityMatcher("/api/auth/customer/**", "/api/orders/**", "/api/reviews/**", "/api/payments/mock", "/api/users/me")
                 .cors(withDefaults())
@@ -57,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/reviews/**").hasRole("DINER")
                         .requestMatchers(HttpMethod.POST, "/api/payments/mock").hasRole("DINER")
                         .requestMatchers(HttpMethod.PUT, "/api/users/me").hasRole("DINER")
+                        .requestMatchers(HttpMethod.POST, "/api/vouchers/apply").hasRole("DINER")
                         .anyRequest().authenticated()
                 )
                 .userDetailsService(customerUserDetailsService)
@@ -71,10 +71,8 @@ public class SecurityConfig {
                         .logoutUrl("/api/auth/customer/logout")
                         .logoutSuccessHandler((req, res, auth) -> res.setStatus(200))
                 );
-
         return http.build();
     }
-
 
     @Bean
     @Order(2)
@@ -92,24 +90,20 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/employee/**").permitAll()
                         .requestMatchers("/api/auth/me").permitAll()
 
-                        // --- SỬA ĐỔI QUAN TRỌNG TẠI ĐÂY ---
-
+                        // --- SỬA ĐỔI PHÂN QUYỀN ---
                         // === KITCHEN ===
-                        // Bếp và Admin có thể xem KDS và ghi chú bếp
                         .requestMatchers("/api/kitchen/active-orders").hasAnyRole("KITCHEN", "ADMIN")
                         .requestMatchers("/api/kitchen/order/{id}/kitchen-note").hasAnyRole("KITCHEN", "ADMIN")
-                        // Cả 3 vai trò đều có thể Hủy (vd: Bếp hủy, NV/Admin hủy từ trang QL)
                         .requestMatchers("/api/kitchen/cancel-order").hasAnyRole("KITCHEN", "ADMIN", "EMPLOYEE")
 
                         // === ADMIN (QUY TẮC CỤ THỂ TRƯỚC) ===
-                        // Chỉ Admin được quản lý Menu
                         .requestMatchers("/api/admin/menu/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/revenue/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/vouchers/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin/reviews/**").hasRole("ADMIN")
 
                         // === EMPLOYEE & ADMIN (QUY TẮC CHUNG SAU) ===
-                        // Cả Admin và Employee đều được quản lý Đơn hàng
                         .requestMatchers("/api/admin/orders/**").hasAnyRole("ADMIN", "EMPLOYEE")
-
-                        // (Xóa quy tắc .requestMatchers("/api/admin/**").hasRole("ADMIN") cũ)
                         // --- KẾT THÚC SỬA ĐỔI ---
 
                         // === WEBSOCKET ===
@@ -129,7 +123,6 @@ public class SecurityConfig {
                         .logoutUrl("/api/auth/employee/logout")
                         .logoutSuccessHandler((req, res, auth) -> res.setStatus(200))
                 );
-
         return http.build();
     }
 }

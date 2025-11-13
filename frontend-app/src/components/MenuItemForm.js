@@ -102,7 +102,7 @@ export const MenuItemForm = () => {
             }
 
             alert(isEditing ? 'Cập nhật thành công!' : 'Tạo món mới thành công!');
-            navigate('/kitchen/admin/menu'); // Quay lại trang danh sách
+            navigate('/restaurant/admin/menu'); // Quay lại trang danh sách
 
         } catch (err) {
             setError('Đã xảy ra lỗi khi lưu: ' + (err.response?.data || err.message));

@@ -82,7 +82,7 @@ export const MyOrders = () => {
                     <th style={{ textAlign: 'left' }}>Trạng thái</th>
                     <th style={{ textAlign: 'left' }}>Tổng tiền</th>
                     <th style={{ textAlign: 'left' }}>Thời gian đặt</th>
-                    <th style={{ textAlign: 'left' }}>Hành động</th> {/* 6. ĐỔI TÊN CỘT */}
+                    <th style={{ textAlign: 'left' }}>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
