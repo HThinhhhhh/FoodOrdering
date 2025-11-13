@@ -18,6 +18,17 @@ const styles = {
         fontWeight: 'bold',
         marginBottom: '20px'
     },
+    // --- THÊM MỚI BỘ LỌC ---
+    filters: {
+        marginBottom: '15px',
+        padding: '10px',
+        background: '#f0f0f0',
+        borderRadius: '5px',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center'
+    },
+    // --- KẾT THÚC THÊM MỚI ---
     table: { width: '100%', borderCollapse: 'collapse' },
     th: { background: '#f4f4f4', padding: '8px', border: '1px solid #ddd', textAlign: 'left' },
     td: { padding: '8px', border: '1px solid #ddd' },
@@ -42,27 +53,44 @@ const Stars = ({ rating }) => {
     );
 };
 
+// Hàm lấy ngày (YYYY-MM-DD)
+const getToday = () => new Date().toISOString().split('T')[0];
+// Hàm lấy ngày 30 ngày trước
+const get30DaysAgo = () => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
+};
+
 export const AdminMenuPage = () => {
     const [menuItems, setMenuItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const navigate = useNavigate();
-
-    // 1. THÊM STATE CHO STATS
     const [reviewStats, setReviewStats] = useState(new Map());
 
-    // 2. CẬP NHẬT HÀM TẢI DỮ LIỆU
-    const fetchData = async () => {
+    // --- 1. THÊM STATE CHO BỘ LỌC NGÀY ---
+    const [startDate, setStartDate] = useState(get30DaysAgo());
+    const [endDate, setEndDate] = useState(getToday());
+    const [showAllTime, setShowAllTime] = useState(false);
+    // --- KẾT THÚC THÊM STATE ---
+
+    // --- 2. CẬP NHẬT HÀM TẢI DỮ LIỆU ---
+    const fetchData = async (useDates) => {
         setLoading(true);
         try {
+            // Chuẩn bị params cho API stats
+            const statsParams = (useDates && startDate && endDate)
+                ? { startDate, endDate }
+                : {};
+
             const [menuRes, statsRes] = await Promise.all([
                 axios.get(`${API_URL}/api/admin/menu`),
-                axios.get(`${API_URL}/api/admin/reviews/stats`) // API thống kê
+                axios.get(`${API_URL}/api/admin/reviews/stats`, { params: statsParams })
             ]);
 
             setMenuItems(menuRes.data);
 
-            // Chuyển đổi kết quả statsRes.data (là { '1': {...}, '2': {...} }) thành Map
             const statsMap = new Map(
                 Object.entries(statsRes.data).map(([id, stats]) => [Number(id), stats])
             );
@@ -76,9 +104,27 @@ export const AdminMenuPage = () => {
     };
 
     useEffect(() => {
-        fetchData();
+        // Tải lần đầu (mặc định 30 ngày)
+        fetchData(true);
     }, []);
-    // --- KẾT THÚC CẬP NHẬT ---
+
+    // --- 3. THÊM HÀM XỬ LÝ LỌC ---
+    const handleFilterClick = () => {
+        fetchData(!showAllTime); // Chỉ gửi ngày nếu không chọn "Tất cả"
+    };
+
+    const handleToggleAllTime = (e) => {
+        const checked = e.target.checked;
+        setShowAllTime(checked);
+        if (checked) {
+            // Nếu chọn "Tất cả", gọi API không cần ngày
+            fetchData(false);
+        } else {
+            // Nếu bỏ chọn "Tất cả", gọi API với ngày đã chọn
+            fetchData(true);
+        }
+    };
+    // --- KẾT THÚC THÊM HÀM ---
 
     // (Hàm handleDelete giữ nguyên - sử dụng "Xóa mềm")
     const handleDelete = async (itemId, itemName) => {
@@ -110,6 +156,23 @@ export const AdminMenuPage = () => {
                     + Thêm món mới
                 </Link>
             </div>
+
+            {/* --- 4. THÊM GIAO DIỆN BỘ LỌC --- */}
+            <div style={styles.filters}>
+                <strong>Lọc Thống kê Đánh giá:</strong>
+                <label>Từ ngày:</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} disabled={showAllTime} />
+                <label>Đến ngày:</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={showAllTime} />
+                <button onClick={handleFilterClick} disabled={loading || showAllTime}>
+                    Lọc
+                </button>
+                <label>
+                    <input type="checkbox" checked={showAllTime} onChange={handleToggleAllTime} />
+                    Xem tất cả (All time)
+                </label>
+            </div>
+            {/* --- KẾT THÚC THÊM GIAO DIỆN --- */}
 
             <table style={styles.table}>
                 <thead>

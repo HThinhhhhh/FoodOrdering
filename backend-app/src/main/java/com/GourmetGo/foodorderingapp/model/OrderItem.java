@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import java.io.Serializable;
+import java.math.BigDecimal; // <-- THÊM IMPORT
 
 @Entity
 @Table(name = "order_items")
@@ -20,24 +21,35 @@ public class OrderItem implements Serializable{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Đơn hàng chứa mục này */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @JsonBackReference("order-order-item")
     private Order order;
 
-    /** Món ăn được chọn */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "menu_item_id", nullable = false)
     @JsonBackReference("menu-item-order-item")
     private MenuItem menuItem;
 
-    /** Số lượng món này được đặt */
     @Column(nullable = false)
     private int quantity;
 
-    // --- THÊM TRƯỜNG MỚI ---
-    @Column(nullable = true) // Cho phép ghi chú là null (không bắt buộc)
+    @Column(nullable = true)
     private String note;
-    // --- KẾT THÚC THÊM TRƯỜNG MỚI ---
+
+    // --- BẮT ĐẦU THÊM MỚI ---
+    /**
+     * Giá cuối cùng của 1 item (đã bao gồm giá gốc + giá options)
+     * (FR22)
+     */
+    @Column(nullable = false)
+    private BigDecimal pricePerUnit;
+
+    /**
+     * Lưu trữ các tùy chọn đã chọn dưới dạng văn bản (để Bếp đọc)
+     * Ví dụ: "Size L (+15k), Thêm trứng (+5k)" (FR9, FR21)
+     */
+    @Column(nullable = true, length = 1000)
+    private String selectedOptionsText;
+    // --- KẾT THÚC THÊM MỚI ---
 }

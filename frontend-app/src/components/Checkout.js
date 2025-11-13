@@ -11,7 +11,7 @@ const API_URL = process.env.REACT_APP_API_URL;
 const SHIPPING_FEE = 30000;
 const VAT_RATE = 0.15;
 
-// CSS cho trang thanh toán (Bạn nên tách ra file .css)
+// (CSS styles giữ nguyên)
 const styles = {
     container: { padding: '20px', maxWidth: '800px', margin: 'auto' },
     section: { background: '#f9f9f9', border: '1px solid #ddd', borderRadius: '8px', padding: '20px', marginBottom: '20px' },
@@ -29,7 +29,7 @@ const styles = {
     totalRow: { display: 'flex', justifyContent: 'space-between', padding: '5px 0' },
     grandTotal: { fontSize: '1.2em', fontWeight: 'bold', color: 'red' },
     checkoutButton: { width: '100%', padding: '15px', fontSize: '1.2em', fontWeight: 'bold', background: 'green', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' },
-    errorText: { color: 'red', fontSize: '0.8em', marginTop: '3px' } // Style cho lỗi validation
+    errorText: { color: 'red', fontSize: '0.8em', marginTop: '3px' }
 };
 
 // --- HÀM VALIDATION (Goal 1 & 3) ---
@@ -66,7 +66,7 @@ export const Checkout = () => {
     const {
         cartItems,
         clearCart,
-        updateItemNote,
+        updateCartItemNote,
         subtotal, // Lấy subtotal
         voucher,  // Lấy voucher đã áp dụng
         voucherError,
@@ -228,11 +228,17 @@ export const Checkout = () => {
 
                 // 3. Gửi đầy đủ OrderRequest lên backend
                 const orderRequest = {
+                    // --- BẮT ĐẦU SỬA ĐỔI ---
+                    // Ánh xạ (map) giỏ hàng mới sang DTO
                     items: cartItems.map(item => ({
-                        menuItemId: item.id,
+                        menuItemId: item.id, // ID món ăn gốc
                         quantity: item.quantity,
-                        note: item.note
+                        note: item.note,
+                        pricePerUnit: item.finalPrice, // Giá 1 món (đã tính options)
+                        selectedOptionsText: item.selectedOptionsText // Chuỗi options
                     })),
+
+                    // --- KẾT THÚC SỬA ĐỔI ---
                     deliveryAddress: fullAddress, // (Goal 4)
                     shipperNote: shipperNote,       // (Goal 1)
                     paymentMethod: paymentMethod,   // (Goal 6)
@@ -455,22 +461,36 @@ export const Checkout = () => {
             {/* (Phần 4: Thông tin đơn hàng - SỬA ĐỔI) */}
             <section style={styles.section}>
                 <h3 style={styles.h3}>Thông tin đơn hàng</h3>
+
+                {/* Sửa logic lặp qua cartItems (dùng cartItemId) */}
                 {cartItems.map(item => (
-                    <div key={item.id} style={styles.orderItem}>
+                    <div key={item.cartItemId} style={styles.orderItem}>
                         <div>
                             <span style={{fontWeight: 'bold'}}>{item.quantity} x {getItemName(item.id)}</span>
+
+                            {/* Hiển thị tùy chọn đã chọn */}
+                            {item.selectedOptionsText && (
+                                <div style={{fontSize: '0.9em', color: 'gray', paddingLeft: '10px'}}>
+                                    ↳ {item.selectedOptionsText}
+                                </div>
+                            )}
+
                             <input
                                 type="text"
                                 placeholder="Ghi chú cho món ăn..."
                                 value={item.note}
-                                onChange={(e) => updateItemNote(item.id, e.target.value)}
+                                // (Sửa hàm gọi: dùng updateCartItemNote)
+                                onChange={(e) => updateCartItemNote(item.cartItemId, e.target.value)}
                                 style={{...styles.input, width: '100%', fontSize: '0.9em', marginTop: '5px'}}
                             />
                         </div>
-                        <span style={{fontWeight: 'bold'}}>{formatCurrency(item.price * item.quantity)}</span>
+                        {/* Giá cuối cùng (đã tính options) * số lượng */}
+                        <span style={{fontWeight: 'bold'}}>{formatCurrency(item.finalPrice * item.quantity)}</span>
                     </div>
                 ))}
+
                 <hr />
+                {/* (Các dòng Tạm tính, VAT, Phí VC, Giảm giá, Tổng thanh toán giữ nguyên) */}
                 <div style={styles.totalRow}>
                     <span>Tạm tính:</span>
                     <span>{formatCurrency(subtotal)}</span>
@@ -483,16 +503,12 @@ export const Checkout = () => {
                     <span>Phí vận chuyển:</span>
                     <span>{formatCurrency(shippingFee)}</span>
                 </div>
-
-                {/* --- THÊM DÒNG GIẢM GIÁ --- */}
                 {discountAmount > 0 && (
                     <div style={{...styles.totalRow, color: 'green', fontWeight: 'bold'}}>
                         <span>Giảm giá ({voucher.code}):</span>
                         <span>-{formatCurrency(discountAmount)}</span>
                     </div>
                 )}
-                {/* --- KẾT THÚC --- */}
-
                 <hr />
                 <div style={{...styles.totalRow, ...styles.grandTotal}}>
                     <span>Tổng thanh toán:</span>

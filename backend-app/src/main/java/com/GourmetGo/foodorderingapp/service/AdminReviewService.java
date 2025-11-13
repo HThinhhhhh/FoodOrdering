@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,14 +41,24 @@ public class AdminReviewService {
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, MenuItemReviewStatsDTO> getReviewStats() {
-        List<Map<String, Object>> results = reviewRepository.getMenuItemReviewStats();
+    public Map<Long, MenuItemReviewStatsDTO> getReviewStats(
+            LocalDateTime startDate, LocalDateTime endDate) { // <-- THÊM THAM SỐ
 
-        // Sửa lỗi ép kiểu: Đảm bảo key là "menuitemid" (chữ thường)
+        List<Map<String, Object>> results;
+
+        // --- SỬA ĐỔI: LOGIC IF/ELSE ---
+        if (startDate != null && endDate != null) {
+            results = reviewRepository.getMenuItemReviewStatsByDateRange(startDate, endDate);
+        } else {
+            results = reviewRepository.getMenuItemReviewStats();
+        }
+        // --- KẾT THÚC SỬA ĐỔI ---
+
+        // (Dùng chữ thường "menuitemid", "averagerating", "reviewcount" để fix lỗi 500)
         return results.stream().map(row -> new MenuItemReviewStatsDTO(
                 ((Number) row.get("menuitemid")).longValue(),
-                ((Number) row.get("averagerating")).doubleValue(),
-                ((Number) row.get("reviewcount")).longValue()
+                (row.get("averagerating") != null) ? ((Number) row.get("averagerating")).doubleValue() : 0.0,
+                (row.get("reviewcount") != null) ? ((Number) row.get("reviewcount")).longValue() : 0L
         )).collect(Collectors.toMap(MenuItemReviewStatsDTO::getMenuItemId, dto -> dto));
     }
 

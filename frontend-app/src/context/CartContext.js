@@ -1,8 +1,8 @@
 // src/context/CartContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios'; // <-- THÊM IMPORT
+import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL; // <-- THÊM MỚI
+const API_URL = process.env.REACT_APP_API_URL;
 
 const CartContext = createContext();
 
@@ -10,75 +10,62 @@ export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
     const [cartItems, setCartItems] = useState([]);
-
-    // --- STATE MỚI CHO VOUCHER ---
-    const [voucher, setVoucher] = useState(null); // (VD: { code: 'WELCOME50', discountAmount: 50000, description: '...' })
+    const [voucher, setVoucher] = useState(null);
     const [voucherError, setVoucherError] = useState('');
-    // --- KẾT THÚC STATE MỚI ---
 
-    // --- TÍNH TOÁN TỔNG PHỤ ---
-    const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    // --- KẾT THÚC TÍNH TOÁN ---
+    // --- TÍNH TOÁN TỔNG PHỤ (SUBTOTAL) MỚI ---
+    // Tính tổng dựa trên 'finalPrice' của mỗi item trong giỏ (đã bao gồm options)
+    const subtotal = cartItems.reduce((sum, item) => sum + (item.finalPrice * item.quantity), 0);
 
-    // Hàm gọi API kiểm tra voucher
+    // Xóa voucher nếu giỏ hàng thay đổi
+    useEffect(() => {
+        setVoucher(null);
+        if (cartItems.length > 0) {
+            // (Không tự động báo lỗi, chỉ reset)
+        } else {
+            setVoucherError('');
+        }
+    }, [cartItems]); // Chạy mỗi khi cartItems thay đổi
+
+    // (Hàm applyVoucher và removeVoucher giữ nguyên từ Giai đoạn 2)
     const applyVoucher = async (code) => {
         setVoucherError('');
         if (!code) {
             setVoucherError("Vui lòng nhập mã.");
             return;
         }
-
         try {
             const response = await axios.post(`${API_URL}/api/vouchers/apply`, {
                 code: code,
-                subtotal: subtotal // Gửi tạm tính hiện tại
+                subtotal: subtotal
             });
-            setVoucher(response.data); // Lưu thông tin voucher (code, discountAmount, description)
+            setVoucher(response.data);
         } catch (err) {
-            setVoucher(null); // Xóa voucher cũ nếu có
+            setVoucher(null);
             setVoucherError(err.response?.data || "Lỗi khi áp dụng mã.");
         }
     };
-
     const removeVoucher = () => {
         setVoucher(null);
         setVoucherError('');
     };
 
-    // --- SỬA ĐỔI: Tự động xóa voucher nếu giỏ hàng thay đổi ---
-    const addToCart = (item) => {
-        setVoucher(null); // Xóa voucher khi thêm bớt
-        setVoucherError('Giỏ hàng đã thay đổi, vui lòng áp dụng lại mã.');
+    // --- HÀM ADD/REMOVE CART MỚI ---
+
+    /**
+     * Thêm một món (đã có tùy chọn) vào giỏ hàng.
+     */
+    const addToCart = (itemToAdd) => {
         setCartItems(prevItems => {
-            // ... (logic thêm vào giỏ giữ nguyên)
-            const itemExists = prevItems.find(i => i.id === item.id);
-            if (itemExists) {
-                return prevItems.map(i =>
-                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-                );
-            }
-            return [...prevItems, { ...item, quantity: 1, note: "" }];
+            // Logic mới: Luôn thêm dòng mới (vì tùy chọn có thể khác nhau)
+            // Gán một ID ngẫu nhiên cho giỏ hàng
+            return [...prevItems, { ...itemToAdd, cartItemId: crypto.randomUUID() }];
         });
     };
 
-    const removeFromCart = (item) => {
-        setVoucher(null); // Xóa voucher khi thêm bớt
-        setVoucherError('Giỏ hàng đã thay đổi, vui lòng áp dụng lại mã.');
-        setCartItems(prevItems => {
-            // ... (logic bớt/xóa giữ nguyên)
-            const itemExists = prevItems.find(i => i.id === item.id);
-            if (itemExists && itemExists.quantity === 1) {
-                return prevItems.filter(i => i.id !== item.id);
-            }
-            return prevItems.map(i =>
-                i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i
-            );
-        });
-    };
-    // --- KẾT THÚC SỬA ĐỔI ---
-
-    const updateItemNote = (itemId, note) => {
-        // (Giữ nguyên)
+    // Xóa một item CỤ THỂ khỏi giỏ bằng cartItemId
+    const removeFromCart = (cartItemIdToRemove) => {
+        setCartItems(prevItems => prevItems.filter(i => i.cartItemId !== cartItemIdToRemove));
     };
 
     const clearCart = () => {
@@ -88,23 +75,49 @@ export const CartProvider = ({ children }) => {
     };
 
     const loadCartFromReorder = (reorderItems, allMenuItems) => {
-        // (Logic hàm này giữ nguyên)
+        // (Logic này giữ nguyên)
     };
+
+    // --- HÀM MỚI ---
+    // Cập nhật số lượng của một item CỤ THỂ trong giỏ
+    const updateCartItemQuantity = (cartItemId, newQuantity) => {
+        if (newQuantity <= 0) {
+            removeFromCart(cartItemId);
+            return;
+        }
+        setCartItems(prevItems =>
+            prevItems.map(item =>
+                item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item
+            )
+        );
+    };
+
+    // Cập nhật ghi chú của một item CỤ THỂ trong giỏ
+    const updateCartItemNote = (cartItemId, note) => {
+        setCartItems(prevItems =>
+            prevItems.map(item =>
+                item.cartItemId === cartItemId ? { ...item, note: note } : item
+            )
+        );
+    };
+    // --- KẾT THÚC HÀM MỚI ---
 
     const value = {
         cartItems,
-        subtotal, // <-- Xuất subtotal
-        addToCart,
-        removeFromCart,
+        subtotal,
+        addToCart, // (Giờ đây nhận 1 item đã xử lý)
+        removeFromCart, // (Giờ đây nhận cartItemId)
         clearCart,
-        updateItemNote,
+        updateItemNote: updateCartItemNote, // Sửa: Trỏ updateItemNote vào hàm mới
         loadCartFromReorder,
-        // --- THÊM CÁC HÀM VÀ STATE MỚI ---
+
         voucher,
         voucherError,
         applyVoucher,
-        removeVoucher
-        // --- KẾT THÚC THÊM MỚI ---
+        removeVoucher,
+
+        // Hàm mới cho giỏ hàng
+        updateCartItemQuantity
     };
 
     return (

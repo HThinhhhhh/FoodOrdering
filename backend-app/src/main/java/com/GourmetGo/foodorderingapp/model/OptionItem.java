@@ -22,17 +22,22 @@ public class OptionItem {
     @Column(nullable = false)
     private String name; // Ví dụ: "Size L", "Coca-Cola", "Trân châu đen"
 
-    /**
-     * Giá cộng thêm (FR21, FR22).
-     * 0.00 nếu là tùy chọn miễn phí (như "Không đá")
-     * 5000.00 nếu là tùy chọn tính phí (như "+5k cho Size L")
-     */
     @Column(nullable = false)
-    private BigDecimal price;
+    private BigDecimal price; // Giá cộng thêm (Vd: +5k cho Size L)
 
-    // Liên kết ngược về Nhóm
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "option_group_id", nullable = false)
     @JsonBackReference("group-option-item")
     private OptionGroup optionGroup;
+
+    // --- BẮT ĐẦU THÊM MỚI ---
+    /**
+     * Liên kết tùy chọn này với một MÓN ĂN khác.
+     * Dùng cho Combo (Vd: Option "Coca-Cola" -> link tới MenuItem "Coca-Cola")
+     * (nullable = true vì "Size L" không link tới món nào cả)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "linked_menu_item_id", nullable = true)
+    private MenuItem linkedMenuItem;
+    // --- KẾT THÚC THÊM MỚI ---
 }

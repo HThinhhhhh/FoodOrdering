@@ -7,5 +7,9 @@ import java.math.BigDecimal;
 public class OptionItemDTO {
     private Long id;
     private String name;
-    private BigDecimal price; // Giá cộng thêm
+    private BigDecimal price;
+
+    // --- THÊM MỚI ---
+    private Long linkedMenuItemId; // ID của MenuItem mà nó liên kết tới (nếu có)
+    // --- KẾT THÚC THÊM MỚI ---
 }

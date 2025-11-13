@@ -3,23 +3,22 @@ package com.GourmetGo.foodorderingapp.repository;
 import com.GourmetGo.foodorderingapp.model.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param; // <-- THÊM IMPORT
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime; // <-- THÊM IMPORT
 import java.util.List;
-import java.util.Map; // <-- THÊM IMPORT
+import java.util.Map;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByMenuItemId(Long menuItemId);
 
-    // --- BẮT ĐẦU: THÊM CÁC HÀM MỚI ---
-
-    /** (ADMIN) Lấy tất cả đánh giá món ăn, sắp xếp mới nhất trước */
     List<Review> findAllByOrderByReviewTimeDesc();
 
     /**
-     * (ADMIN - THỐNG KÊ) Lấy Rating Trung bình (AVG) và Tổng số (COUNT)
+     * (THỐNG KÊ TỔNG) Lấy Rating Trung bình (AVG) và Tổng số (COUNT)
      */
     @Query(value =
             "SELECT " +
@@ -31,5 +30,23 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             nativeQuery = true)
     List<Map<String, Object>> getMenuItemReviewStats();
 
-    // --- KẾT THÚC: THÊM CÁC HÀM MỚI ---
+    // --- BẮT ĐẦU: THÊM HÀM MỚI ---
+    /**
+     * (THỐNG KÊ THEO NGÀY) Lấy Rating Trung bình (AVG) và Tổng số (COUNT)
+     * TRONG MỘT KHOẢNG THỜI GIAN (dựa trên reviewTime)
+     */
+    @Query(value =
+            "SELECT " +
+                    "   menu_item_id as menuItemId, " +
+                    "   AVG(rating) as averageRating, " +
+                    "   COUNT(id) as reviewCount " +
+                    "FROM reviews " +
+                    "WHERE review_time >= :startDate AND review_time <= :endDate " +
+                    "GROUP BY menu_item_id",
+            nativeQuery = true)
+    List<Map<String, Object>> getMenuItemReviewStatsByDateRange(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
+    // --- KẾT THÚC: THÊM HÀM MỚI ---
 }

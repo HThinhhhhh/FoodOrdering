@@ -21,16 +21,23 @@ public class OptionGroup {
     private Long id;
 
     @Column(nullable = false)
-    private String name; // Ví dụ: "Chọn Size", "Chọn Topping", "Chọn Nước"
+    private String name; // Ví dụ: "Chọn Size", "Chọn Topping"
 
-    // Liên kết ngược về Món ăn
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "menu_item_id", nullable = false)
     @JsonBackReference("menu-item-option-group")
     private MenuItem menuItem;
 
-    // Danh sách các tùy chọn con
     @OneToMany(mappedBy = "optionGroup", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("group-option-item")
     private Set<OptionItem> options;
+
+    // --- THÊM TRƯỜNG MỚI (FEATURE 2) ---
+    /**
+     * Quy tắc lựa chọn cho nhóm này
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SelectionType selectionType;
+    // --- KẾT THÚC THÊM MỚI ---
 }

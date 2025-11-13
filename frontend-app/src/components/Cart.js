@@ -17,51 +17,52 @@ const buttonStyle = {
 };
 
 export const Cart = () => {
-    const { cartItems, addToCart, removeFromCart } = useCart();
+    // --- SỬA ĐỔI: Lấy subtotal và các hàm mới từ context ---
+    const {
+        cartItems,
+        subtotal,
+        voucherError,
+        updateCartItemQuantity, // Hàm mới
+        updateCartItemNote,    // Hàm mới
+        removeFromCart         // Hàm mới (nhận cartItemId)
+    } = useCart();
+    // --- KẾT THÚC SỬA ĐỔI ---
+
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // --- (State kiểm tra đơn hàng hoạt động) ---
+    // (Logic kiểm tra activeOrderCount giữ nguyên)
     const [activeOrderCount, setActiveOrderCount] = useState(0);
     const [isLoadingOrders, setIsLoadingOrders] = useState(true);
-
     useEffect(() => {
         if (!currentUser) {
             setIsLoadingOrders(false);
             setActiveOrderCount(0);
             return;
         }
-
         const checkActiveOrders = async () => {
             setIsLoadingOrders(true);
             try {
-                // (API này đã được OrderController (Backend Phần 4) bảo vệ
-                //  và sửa để dùng customer.getId())
                 const response = await axios.get(`${API_URL}/api/orders/my-orders`);
                 const orders = response.data;
-
                 const activeOrders = orders.filter(order =>
+                    order.status === 'PENDING_CONFIRMATION' ||
                     order.status === 'RECEIVED' ||
                     order.status === 'PREPARING' ||
-                    order.status === 'READY'
+                    order.status === 'READY' ||
+                    order.status === 'DELIVERING'
                 );
                 setActiveOrderCount(activeOrders.length);
-
             } catch (error) {
                 console.error("Lỗi khi kiểm tra đơn hàng đang hoạt động:", error);
                 setActiveOrderCount(0);
             }
             setIsLoadingOrders(false);
         };
-
         checkActiveOrders();
     }, [currentUser]);
-    // --- KẾT THÚC LOGIC KIỂM TRA ---
-
-    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     const renderCheckoutButton = () => {
-        // --- (Cập nhật logic vô hiệu hóa) ---
         const hasReachedLimit = activeOrderCount >= 3;
         const isDisabled = cartItems.length === 0 || !currentUser || hasReachedLimit || isLoadingOrders;
 
@@ -71,7 +72,7 @@ export const Cart = () => {
         if (isLoadingOrders) title = "Đang kiểm tra đơn hàng...";
         if (hasReachedLimit) title = "Bạn đã đạt giới hạn 3 đơn hàng đang xử lý!";
 
-        let buttonText = `${formatCurrency(total)} - Thanh toán`;
+        let buttonText = `${formatCurrency(subtotal)} - Thanh toán`;
         if (isLoadingOrders) buttonText = "Đang tải...";
         if (hasReachedLimit) buttonText = `Đã đạt giới hạn (${activeOrderCount}/3 đơn)`;
 
@@ -106,35 +107,57 @@ export const Cart = () => {
             {cartItems.length === 0 ? (
                 <p>Giỏ hàng của bạn đang trống.</p>
             ) : (
-                <ul>
+                <ul style={{listStyle: 'none', paddingLeft: 0}}>
+                    {/* --- SỬA ĐỔI: LẶP QUA GIỎ HÀNG MỚI --- */}
                     {cartItems.map(item => (
-                        <li key={item.id} style={{ marginBottom: '10px' }}>
-                            {item.name}
+                        <li key={item.cartItemId} style={{ marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
+                            <strong>{item.name}</strong>
+
+                            {/* Hiển thị tùy chọn đã chọn */}
+                            {item.selectedOptionsText && (
+                                <div style={{fontSize: '0.9em', color: 'gray'}}>
+                                    ↳ {item.selectedOptionsText}
+                                </div>
+                            )}
+
+                            {/* Ghi chú cho món ăn (cập nhật bằng cartItemId) */}
+                            <input
+                                type="text"
+                                placeholder="Ghi chú cho món này..."
+                                value={item.note}
+                                onChange={(e) => updateCartItemNote(item.cartItemId, e.target.value)}
+                                style={{width: '95%', fontSize: '0.9em', marginTop: '5px', padding: '3px'}}
+                            />
+
+                            {/* Cập nhật số lượng (cập nhật bằng cartItemId) */}
                             <div>
                                 <button
                                     style={buttonStyle}
-                                    onClick={() => removeFromCart(item)}
+                                    onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity - 1)}
                                 >
                                     -
                                 </button>
                                 <span>{item.quantity}</span>
                                 <button
                                     style={buttonStyle}
-                                    onClick={() => addToCart(item)}
+                                    onClick={() => updateCartItemQuantity(item.cartItemId, item.quantity + 1)}
                                 >
                                     +
                                 </button>
                                 <span style={{ marginLeft: '15px' }}>
-                                    {formatCurrency(item.price * item.quantity)}
+                                    {/* Giá cuối cùng (đã tính options) * số lượng */}
+                                    {formatCurrency(item.finalPrice * item.quantity)}
                                 </span>
                             </div>
-                            {/* XÓA Ô INPUT GHI CHÚ (Theo yêu cầu mới) */}
                         </li>
                     ))}
+                    {/* --- KẾT THÚC SỬA ĐỔI --- */}
                 </ul>
             )}
 
-            <strong>Tổng cộng: {formatCurrency(total)}</strong>
+            <strong>Tổng cộng: {formatCurrency(subtotal)}</strong>
+
+            {voucherError && <small style={{color: 'red', display: 'block'}}>{voucherError}</small>}
 
             {renderCheckoutButton()}
 
