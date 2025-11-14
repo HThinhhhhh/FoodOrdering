@@ -151,7 +151,7 @@ export const KitchenDisplay = () => {
 
     useEffect(() => {
         const client = new Client();
-        client.webSocketFactory = () => new SockJS(BACKEND_WS_URL);
+        client.webSocketFactory = () => new SockJS(BACKEND_WS_URL, null, { withCredentials: true });
 
         const fetchActiveOrders = async () => {
             try {

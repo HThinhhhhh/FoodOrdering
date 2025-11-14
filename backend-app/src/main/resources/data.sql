@@ -44,21 +44,21 @@ INSERT INTO employees (username, password, role) VALUES
 INSERT INTO menu_items (name, description, price, vegetarian, spicy, popular, category, status, image_url)
 VALUES
     -- ID 1 (Có Tùy chọn)
-    ('Phở Bò Tái', 'Phở bò truyền thống với thịt bò tái mềm', 65000.00, false, false, true, 'MAIN_COURSE', 'ON_SALE', 'https://img-global.cpcdn.com/recipes/fdfe66b5480915c5/680x781cq80/beef-pho-ph%E1%BB%9F-bo-tai-recipe-main-photo.jpg'),
+    ('Phở Bò Tái', 'Phở bò truyền thống với thịt bò tái mềm', 65000.00, false, false, true, 'MAIN_COURSE', 'ON_SALE', 'https://statics.vinpearl.com/pho-bo-ha-noi-6_1688008297.jpg'),
     -- ID 2
-    ('Bún Chả Hà Nội', 'Bún chả nướng than hoa, kèm rau sống', 55000.00, false, false, true, 'MAIN_COURSE', 'ON_SALE', 'https://cdn2.fptshop.com.vn/unsafe/1920x0/filters:format(webp):quality(75)/2024_1_13_638407567967930759_tong-hop-cac-cach-an-bun-cha-ha-noi-chuan-4.png'),
+    ('Bún Chả Hà Nội', 'Bún chả nướng than hoa, kèm rau sống', 55000.00, false, false, true, 'MAIN_COURSE', 'ON_SALE', 'https://statics.vinpearl.com/bun-cha-ha-noi-1_1688011814.jpg'),
     -- ID 3 (Hết hàng)
-    ('Bún Bò Huế (Cay)', 'Bún bò vị Huế đặc trưng, cay nồng', 60000.00, false, true, true, 'MAIN_COURSE', 'TEMP_OUT_OF_STOCK', 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Bun_bo_hue.JPG'),
+    ('Bún Bò Huế (Cay)', 'Bún bò vị Huế đặc trưng, cay nồng', 60000.00, false, true, true, 'MAIN_COURSE', 'TEMP_OUT_OF_STOCK', 'https://statics.vinpearl.com/bun-bo-hue-71_1755070731.jpg'),
     -- ID 4 (Ngừng bán) - Dùng ảnh cơm gà Hải Nam
-    ('Cơm Gà Xối Mỡ', 'Cơm chiên với gà giòn xối mỡ tỏi', 50000.00, false, false, true, 'MAIN_COURSE', 'DISCONTINUED', 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Hainanese_Chicken_Rice_in_Singapore.jpg/1280px-Hainanese_Chicken_Rice_in_Singapore.jpg'),
+    ('Cơm Gà Xối Mỡ', 'Cơm chiên với gà giòn xối mỡ tỏi', 50000.00, false, false, true, 'MAIN_COURSE', 'DISCONTINUED', 'https://statics.vinpearl.com/com-ga-xoi-mo-01_1631605364.jpg'),
     -- ID 5 (Món chay) - Dùng ảnh đậu hũ nhồi thịt (tương tự)
-    ('Đậu Hũ Sốt Cà Chua', 'Đậu hũ non sốt cà chua, ăn kèm cơm trắng', 45000.00, true, false, false, 'MAIN_COURSE', 'ON_SALE', 'https://upload.wikimedia.org/wikipedia/commons/c/c2/Pork_stuffed_fried_tofu%2C_with_tomato_and_onion.jpg'),
+    ('Đậu Hũ Sốt Cà Chua', 'Đậu hũ non sốt cà chua, ăn kèm cơm trắng', 45000.00, true, false, false, 'MAIN_COURSE', 'ON_SALE', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR25S3rZOpiMwR_XyICnAfv-kX5JBc_FlfysA&s'),
     -- ID 6 (Khai vị)
-    ('Nem Chay (Khai vị)', 'Nem cuốn chay kèm rau thơm và sốt tương', 30000.00, true, false, false, 'APPETIZER', 'ON_SALE', 'https://upload.wikimedia.org/wikipedia/commons/2/22/VegetableSpringRolls.JPG'),
+    ('Nem Chay (Khai vị)', 'Nem cuốn chay kèm rau thơm và sốt tương', 30000.00, true, false, false, 'APPETIZER', 'ON_SALE', 'https://haithuycatering.com/image/5c3825d351046d693ead0377/original.jpg'),
     -- ID 7 (Đồ uống)
-    ('Coca-Cola', 'Coca-Cola lon 330ml', 15000.00, true, false, true, 'BEVERAGE', 'ON_SALE', 'https://leteemartdalat.vn/static/images/san-pham/thuc-pham/Nước%20uống/3/Nước%20Ngọt%20Cocacola%20350ml.jpg'),
+    ('Coca-Cola', 'Coca-Cola lon 330ml', 15000.00, true, false, true, 'BEVERAGE', 'ON_SALE', 'https://product.hstatic.net/1000282430/product/nuoc-ngot-coca-cola-nhat-500ml_f61289e9a50d41398d9711800846f9b0_grande.jpg'),
     -- ID 8 (Combo) - Dùng lại ảnh Bún Chả
-    ('Combo Bún Chả', '1 Bún Chả + 1 Nước ngọt. Tiết kiệm 5k', 65000.00, false, false, true, 'COMBO', 'ON_SALE', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Bun-cha-hanoi.jpg/1280px-Bun-cha-hanoi.jpg');
+    ('Combo Bún Chả', '1 Bún Chả + 1 Nước ngọt. Tiết kiệm 5k', 65000.00, false, false, true, 'COMBO', 'ON_SALE', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2iAcciVJAcNqKkm-nnmU3-hoOkl1ZjiMGWQ&s');
 
 
 -- ==================================

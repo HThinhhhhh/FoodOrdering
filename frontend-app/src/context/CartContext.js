@@ -74,8 +74,39 @@ export const CartProvider = ({ children }) => {
         setVoucherError('');
     };
 
+    // ====================================================================
+    // --- BẮT ĐẦU: TRIỂN KHAI LOGIC loadCartFromReorder ĐÃ SỬA LỖI ---
+    // ====================================================================
     const loadCartFromReorder = (reorderItems, allMenuItems) => {
-        // (Logic này giữ nguyên)
+        // Tạo map để tìm item nhanh hơn
+        const menuMap = new Map(allMenuItems.map(item => [item.id, item]));
+
+        const newCartItems = reorderItems
+            .map(reItem => {
+                const menuItem = menuMap.get(reItem.menuItemId);
+                if (!menuItem) return null; // Bỏ qua nếu món ăn đã bị xóa
+
+                // Chuyển đổi thành định dạng item trong giỏ hàng
+                return {
+                    ...menuItem,
+                    id: menuItem.id,
+                    // Dùng giá gốc, vì API reorder chỉ trả về item cơ bản (MenuItemId, Qty, Note)
+                    // và không có cách nào để tái tạo lại cấu trúc tùy chọn phức tạp.
+                    finalPrice: parseFloat(menuItem.price),
+                    selectedOptionsText: '', // Coi như không có tùy chọn cho đơn hàng đặt lại
+                    quantity: reItem.quantity,
+                    note: reItem.note || '',
+                    cartItemId: crypto.randomUUID() // Tạo ID duy nhất cho giỏ hàng
+                };
+            })
+            .filter(item => item !== null);
+
+        // Cập nhật giỏ hàng và reset voucher
+        if (newCartItems.length > 0) {
+            setCartItems(newCartItems);
+            setVoucher(null);
+            setVoucherError('');
+        }
     };
 
     // --- HÀM MỚI ---
